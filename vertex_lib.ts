@@ -1,5 +1,4 @@
 // Module to interact with Vertex AI.
-// TODO(achvasta) - move this into a node module.
 
 import {
   HarmBlockThreshold,
@@ -85,7 +84,7 @@ const topics_schema = {
  * @param data: the data that the model should consider.
  * @returns the instructions and the data as a text
  */
-function getPrompt(instructions: string, data: string[]) {
+export function getPrompt(instructions: string, data: string[]) {
   return `${instructions} ${data.join()}`;
 }
 
