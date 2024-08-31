@@ -204,11 +204,52 @@ export async function learnTopics(
  * @param comments: the data to summarize
  * @returns: the LLM's summarization.
  */
-export async function summarize(
+export async function basicSummarize(
   instructions: string,
   comments: string[]
 ): Promise<string> {
   const summaryResponse = await executeRequest(instructions, comments);
+  if (summaryResponse instanceof FailedExecutionError) {
+    throw summaryResponse;
+  } else {
+    return summaryResponse;
+  }
+}
+
+export interface VoteData {
+  agreeCount: number;
+  disagreeCount: number;
+  passCount?: number;
+  totalCount: number;
+}
+
+export interface CommentDataRow {
+  commentText: string,
+  groupVoteTallies: { [key: string]: VoteData }
+}
+
+/**
+ * Utility function for formatting the comments together with vote tally data
+ * @param commentData: the data to summarize, as an array of CommentDataRow objects
+ * @returns: comments, together with vote tally information as JSON
+ */
+export function formatCommentsWithVotes(commentData: CommentDataRow[]): string[] {
+  return commentData.map((row: CommentDataRow) =>
+    row.commentText + "\n  vote info per group: " + JSON.stringify(row.groupVoteTallies)
+  );
+}
+
+/**
+ * Summarizes the comments using a LLM on Vertex.
+ * @param instructions: how the comments should be summarized.
+ * @param commentData: the data to summarize, as an array of CommentDataRow objects
+ * @returns: the LLM's summarization.
+ */
+export async function voteTallySummarize(
+  instructions: string,
+  commentData: CommentDataRow[]
+): Promise<string> {
+  const summaryResponse = await executeRequest(instructions, formatCommentsWithVotes(commentData));
   if (summaryResponse instanceof FailedExecutionError) {
     throw summaryResponse;
   } else {
