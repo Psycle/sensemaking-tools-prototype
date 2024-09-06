@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/jest"
   },
   "repository": {
     "type": "git",
@@ -15,9 +15,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.4.1"
+    "@babel/preset-env": "^7.25.4",
+    "@google-cloud/vertexai": "^1.4.1",
+    "babel-jest": "^29.7.0",
+    "ts-node": "^10.9.2"
   }
 }
