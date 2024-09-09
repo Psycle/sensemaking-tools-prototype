@@ -19,6 +19,7 @@ import {
   HarmCategory,
   VertexAI,
 } from "@google-cloud/vertexai";
+import {generateTopicModelingPrompt} from "./tasks/topic_modeling";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
@@ -172,28 +173,7 @@ export async function learnTopics(
   comments: string[],
   { depth = 1, parentTopics }: { depth?: number; parentTopics?: string[] }
 ): Promise<Topic[]> {
-  let instructions =
-    "Identify a " +
-    depth +
-    "-tiered hierarchical topic modeling of the following comments, and return the results as ";
-  if (depth == 1) {
-    instructions += "an array of strings.";
-  } else if (depth == 2) {
-    instructions +=
-      "an array of objects with keys name and subtopics, where subtopics points to an array strings (no nested objects).";
-  }
-  if (parentTopics !== undefined) {
-    instructions +=
-      " The top level topics should be: " +
-      JSON.stringify([
-        "Infrastructure & Development",
-        "Social & Community Issues",
-        "Economy & Employment",
-        "Governance & Policy",
-      ]) +
-      ".";
-    console.log(instructions);
-  }
+  const instructions = generateTopicModelingPrompt(depth, parentTopics);
   const response = await generateJSON(instructions, comments);
   return response;
 }
