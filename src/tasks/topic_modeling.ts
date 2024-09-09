@@ -16,6 +16,79 @@
  * @fileoverview Helper functions for performing topic modeling on sets of comments.
  */
 
+export const LEARN_TOPICS_PROMPT = `
+Identify a 1-tiered hierarchical topic modeling of the following comments, and return the results as an array of strings.
+Use Title Case for topic names.
+`;
+
+export const LEARN_TOPICS_AND_SUBTOPICS_PROMPT = `
+Identify a 2-tiered hierarchical topic modeling of the following comments, and return the results as an array of JSON objects with keys 'name' and 'subtopics', where 'name' is a topic name and 'subtopics' is an array of short-named subtopics (no nested objects).
+
+Follow these steps:
+
+1. **Define Topics:** Start by identifying the main topics. Use Title Case for topic names.
+2. **Identify Subtopics:** For each topic, identify relevant subtopics. Use Title Case for subtopic names.
+3. **Enforce Exclusion: It is absolutely crucial that no subtopic should have the same name as any of the main topics. Before adding any subtopic to a topic, rigorously check if a topic with the same name already exists. If it does, discard that subtopic completely and do not include it in any topic's list of subtopics.**
+`;
+
+export function learnSubtopicsPrompt(parentTopics: string[]): string {
+  return `
+Analyze the following comments and identify relevant subtopics within each of the following main topics:
+${JSON.stringify(parentTopics)}
+
+Output Format:
+
+Present your analysis in the following JSON structure:
+
+\`\`\`json
+[
+  {
+    "name": "Topic 1",
+    "subtopics": [
+      { "name": "Subtopic 1" },
+      { "name": "Subtopic 2" },
+      ...
+    ]
+  },
+  {
+    "name": "Topic 2",
+    "subtopics": [
+      { "name": "Subtopic 1" },
+      { "name": "Subtopic 2" },
+      ...
+    ]
+  },
+  // ... other topics
+]
+
+Important Considerations:
+- Use Title Case for all subtopic names.
+- Ensure that each subtopic is relevant to its assigned main topic.
+- No subtopic should have the same name as any of the main topics.
+- Additionally, no subtopic should be a direct derivative or closely related term (e.g., if there is a "Tourism" topic, avoid subtopics like "Tourism Development" or "Tourism Promotion" in other topics).
+
+Example of Incorrect Output:
+
+\`\`\`json
+[
+  {
+    "name": "Economic Development",
+    "subtopics": [
+        { "name": "Job Creation" },
+        { "name": "Business Growth" },
+        { "name": "Tourism Development" }, // Incorrect: Too closely related to the "Tourism" topic
+        { "name": "Tourism Promotion" } // Incorrect: Too closely related to the "Tourism" topic
+      ]
+  },
+  {
+    "name": "Tourism",
+    ...
+  },
+  // ... other topics
+]
+`;
+}
+
 /**
  * Generates an LLM prompt for topic modeling of a set of comments.
  *
@@ -27,27 +100,13 @@ export function generateTopicModelingPrompt(
   depth: number,
   parentTopics?: string[]
 ): string {
-  let instructions =
-    "Identify a " +
-    depth +
-    "-tiered hierarchical topic modeling of the following comments, and return the results as ";
-  if (depth == 1) {
-    instructions += "an array of strings.";
-  } else if (depth == 2) {
-    instructions +=
-      "an array of objects with keys name and subtopics, where subtopics points to an array strings (no nested objects).";
+
+  switch (depth) {
+    case 1:
+      return LEARN_TOPICS_PROMPT;
+    case 2:
+      return parentTopics?.length ? learnSubtopicsPrompt(parentTopics) : LEARN_TOPICS_AND_SUBTOPICS_PROMPT;
+    default:
+      throw new Error("Invalid depth. Please provide a depth of 1 or 2.");
   }
-  if (parentTopics !== undefined) {
-    instructions +=
-      " The top level topics should be: " +
-      JSON.stringify([
-        "Infrastructure & Development",
-        "Social & Community Issues",
-        "Economy & Employment",
-        "Governance & Policy",
-      ]) +
-      ".";
-    console.log(instructions);
-  }
-  return instructions;
 }
