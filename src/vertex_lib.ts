@@ -20,6 +20,7 @@ import {
   VertexAI,
 } from "@google-cloud/vertexai";
 import {generateTopicModelingPrompt} from "./tasks/topic_modeling";
+import {generateCategorizationPrompt, mergeCategorizations} from "./tasks/categorization";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
@@ -31,19 +32,23 @@ const model = "gemini-1.5-pro-001";
 const safetySettings = [
   {
     category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
   },
   {
     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_UNSPECIFIED,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
   },
 ];
 
@@ -247,18 +252,49 @@ export async function getTopics(comments: string[]): Promise<string> {
 
 /**
  * Categorize the comments by topics using a LLM on Vertex.
- * @param instructions How the comments should be categorized.
  * @param comments The data to summarize
+ * @param instructions Optional. How the comments should be categorized.
  * @returns: The LLM's categorization.
  */
 export async function categorize(
-  instructions: string,
-  comments: string[]
+  comments: string[],
+  instructions?: string
 ): Promise<string> {
-  const categorizeResponse = await executeRequest(instructions, comments);
-  if (categorizeResponse instanceof FailedExecutionError) {
-    throw categorizeResponse;
-  } else {
-    return categorizeResponse;
+
+  // Generate instructions if not supplied
+  if (!instructions) {
+
+    // TODO: replace hardcoded topics with optional input param
+    let mainTopics = [ // 8 pillars for Bowling Green 2050
+      "Economic Development",
+      "Housing",
+      "Infrastructure",
+      "Public Health",
+      "Quality of Life",
+      "Talent Development",
+      "Tourism",
+      // "Storytelling",  // "Storytelling" is focused around marketing the county - not a topic of discussion in comments
+    ]
+
+    const learnedTopics = await learnTopics(comments, { depth: 2, parentTopics: mainTopics });
+
+    instructions = generateCategorizationPrompt(JSON.stringify(learnedTopics));
   }
+
+  let allCategorizations: any[] = [];  // TODO: replace with a more specific type
+
+  const batchSize = 250; // TODO: make it an input param
+  for (let i = 0; i < comments.length; i += batchSize) {
+    const batch = comments.slice(i, i + batchSize);
+
+    let categorizedBatch = await executeRequest(instructions, batch);
+
+    if (categorizedBatch instanceof FailedExecutionError) {
+      throw categorizedBatch;
+    } else {
+      mergeCategorizations(allCategorizations, JSON.parse(categorizedBatch));
+    }
+  }
+
+  return JSON.stringify(allCategorizations, null, 2);  // format and indent by 2 spaces
 }
