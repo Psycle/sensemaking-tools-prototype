@@ -17,15 +17,15 @@ import { getPrompt, formatCommentsWithVotes } from "./vertex_lib";
 describe("VertexLibTest", () => {
   it("should create a prompt", () => {
     expect(getPrompt("Summarize this:", ["comment1", "comment2"])).toEqual(
-      "Summarize this: comment1,comment2",
+      "Summarize this: comment1,comment2"
     );
   });
   it("should format comments with vote tallies via formatCommentsWithVotes", () => {
     expect(
       formatCommentsWithVotes([
         {
-          commentText: "comment1",
-          groupVoteTallies: {
+          text: "comment1",
+          voteTalliesByGroup: {
             "0": {
               agreeCount: 10,
               disagreeCount: 5,
@@ -41,8 +41,8 @@ describe("VertexLibTest", () => {
           },
         },
         {
-          commentText: "comment2",
-          groupVoteTallies: {
+          text: "comment2",
+          voteTalliesByGroup: {
             "0": {
               agreeCount: 2,
               disagreeCount: 5,
@@ -57,7 +57,7 @@ describe("VertexLibTest", () => {
             },
           },
         },
-      ]),
+      ])
     ).toEqual([
       `comment1
   vote info per group: {"0":{"agreeCount":10,"disagreeCount":5,"passCount":0,"totalCount":15},"1":{"agreeCount":5,"disagreeCount":10,"passCount":5,"totalCount":20}}`,
