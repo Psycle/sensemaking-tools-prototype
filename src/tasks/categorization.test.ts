@@ -15,18 +15,28 @@
 import {generateCategorizationPrompt, mergeCategorizations} from './categorization';
 
 describe('Categorization Prompt Generator', () => {
-  it('should generate a categorization prompt with sample topics', () => {
-    const topics = `
+  const sampleTopics = `
 [{"name":"Economic Development","subtopics":[{"name":"Job Creation"},{"name":"Business Growth"}]},
 {"name":"Housing","subtopics":[{"name":"Affordable Housing Options"},{"name":"Rental Market Prices"}]}]
 `;
-    const prompt = generateCategorizationPrompt(topics);
+
+  it('should generate a 1-level categorization prompt', () => {
+    const topicDepth = 1;
+    const prompt = generateCategorizationPrompt(sampleTopics, topicDepth);
+    expect(prompt).toContain('Assign each of the following comments to the most relevant topic.');
     expect(prompt).toContain('Economic Development');
-    expect(prompt).toContain('Job Creation');
-    expect(prompt).toContain('Housing');
-    expect(prompt).toContain('Rental Market Prices');
-    expect(prompt).toContain('Output Format:');
-    expect(prompt).toContain('Important Considerations:');
+  });
+
+  it('should generate a 2-level categorization prompt', () => {
+    const topicDepth = 2;
+    const prompt = generateCategorizationPrompt(sampleTopics, topicDepth);
+    expect(prompt).toContain('Assign each of the following comments to the most relevant subtopic within the corresponding main topic.');
+    expect(prompt).toContain('Economic Development');
+  });
+
+  it('should throw an error for more than two levels topics', () => {
+    const topicDepth = 3;
+    expect(() => generateCategorizationPrompt(sampleTopics, topicDepth)).toThrowError("Invalid topic depth. Please provide a depth of 1 or 2.");
   });
 });
 

@@ -16,16 +16,42 @@
  * @fileoverview Helper functions for performing comments categorization.
  */
 
-/**
- * Generates a prompt for an LLM to categorize comments based on a predefined set of topics (and subtopics).
- *
- * @param topics A JSON string representing the hierarchy of topics (and optional subtopics).
- *   The structure should be an array of objects, where each object has a "name" property (for the topic)
- *   and a "subtopics" property (an array of objects with "name" properties for subtopics).
- *
- * @returns The generated prompt string, including instructions, output format, and considerations for categorization.
- */
-export function generateCategorizationPrompt(topics: string): string {
+export function topicCategorizationPrompt(topics: string): string {
+  return `
+Assign each of the following comments to the most relevant topic.
+
+Main Topics:
+${topics}
+
+Output Format:
+
+\`\`\`json
+[
+  {
+    "name": "Topic 1",
+    "comments": ["comment 1", "comment 2"]
+  },
+  {
+    "name": "Topic 2",
+    "comments": ["comment 3", "comment 4"]
+  },
+  // ... other topics
+]
+
+Important Considerations:
+- Ensure the assignment of comments to topics is accurate and reflects the meaning of the comment.
+- If comments touch on multiple topics, they should be added to each of the corresponding topics .
+- Prioritize assigning comments to existing topics whenever possible.
+- Only create a new relevant topic if absolutely necessary. This should be done in very exceptional cases where no existing topic can be reasonably applied. For example, don't create a new "Transportation" topic if there's a "Public Transportation" topic.
+- When creating a new topic, explicitly mark it as "NEW" so we can track what was added to the original ones. For example:
+{ "name": "NEW TOPIC: Other", ... }
+- In the final output, only include topics that have at least one comment assigned.
+- Do not add \`\`\`json at the beginning of your response.
+- Before providing the final output, ensure that the generated JSON is valid and well-formed.
+`;
+}
+
+export function subtopicCategorizationPrompt(topics: string): string {
   return `
 Assign each of the following comments to the most relevant subtopic within the corresponding main topic.
 
@@ -83,6 +109,27 @@ Example of Incorrect Output:
     ]
   },
 `;
+}
+
+/**
+ * Generates a prompt for an LLM to categorize comments based on a predefined set of topics (and subtopics).
+ *
+ * @param topics A JSON string representing the hierarchy of topics (and optional subtopics).
+ *   The structure should be an array of objects, where each object has a "name" property (for the topic)
+ *   and a "subtopics" property (an array of objects with "name" properties for subtopics).
+ *
+ * @param topicDepth The user provided topics depth (1 or 2)
+ * @returns The generated prompt string, including instructions, output format, and considerations for categorization.
+ */
+export function generateCategorizationPrompt(topics: string, topicDepth: number): string {
+  switch (topicDepth) {
+    case 1:
+      return topicCategorizationPrompt(topics);
+    case 2:
+      return subtopicCategorizationPrompt(topics);
+    default:
+      throw new Error("Invalid topic depth. Please provide a depth of 1 or 2.");
+  }
 }
 
 /**

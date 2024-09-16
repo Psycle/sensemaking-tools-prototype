@@ -237,48 +237,56 @@ export async function voteTallySummarize(
 }
 
 /**
+ * Parses a comma-separated string of topics into an array of trimmed strings.
+ *
+ * @param topics The comma-separated string of topics (may be undefined, empty, or contain only whitespace).
+ * @returns An array of trimmed topic strings, or undefined if the input is undefined, empty, or contains only whitespace.
+ */
+function parseTopics(topics: string | undefined): string[] | undefined {
+  if (topics && topics.trim() !== "") {
+    return topics.split(',').map(topic => topic.trim());
+  }
+  // No need to return undefined explicitly here, as it's the default if the condition is false.
+}
+
+/**
  * Extracts topics from the comments using a LLM on Vertex AI.
  * @param comments The comments data for topic modeling
+ * @param topicDepth The user provided topics depth (1 or 2)
+ * @param topics Optional. The user provided comma-separated string of top-level topics
  * @returns: The LLM's topic modeling.
  */
-export async function getTopics(comments: string[]): Promise<string> {
-  const topicsResponse = await learnTopics(comments, { depth: 1 });
+export async function getTopics(comments: string[], topicDepth: number, topics?: string): Promise<string> {
+  const parentTopics = parseTopics(topics);
+  const topicsResponse = await learnTopics(comments, { depth: topicDepth, parentTopics: parentTopics });
   if (topicsResponse instanceof FailedExecutionError) {
     throw topicsResponse;
   } else {
-    return JSON.stringify(topicsResponse);
+    return JSON.stringify(topicsResponse, null, 2);  // format and indent by 2 spaces
   }
 }
 
 /**
  * Categorize the comments by topics using a LLM on Vertex.
  * @param comments The data to summarize
+ * @param topicDepth The user provided topics depth (1 or 2)
+ * @param topics Optional. The user provided top-level topics
  * @param instructions Optional. How the comments should be categorized.
  * @returns: The LLM's categorization.
  */
 export async function categorize(
   comments: string[],
+  topicDepth: number,
+  topics?: string,
   instructions?: string
 ): Promise<string> {
 
-  // Generate instructions if not supplied
   if (!instructions) {
+    // Generate instructions if not supplied
+    const parentTopics = parseTopics(topics);
+    const learnedTopics = await learnTopics(comments, { depth: topicDepth, parentTopics: parentTopics });
 
-    // TODO: replace hardcoded topics with optional input param
-    let mainTopics = [ // 8 pillars for Bowling Green 2050
-      "Economic Development",
-      "Housing",
-      "Infrastructure",
-      "Public Health",
-      "Quality of Life",
-      "Talent Development",
-      "Tourism",
-      // "Storytelling",  // "Storytelling" is focused around marketing the county - not a topic of discussion in comments
-    ]
-
-    const learnedTopics = await learnTopics(comments, { depth: 2, parentTopics: mainTopics });
-
-    instructions = generateCategorizationPrompt(JSON.stringify(learnedTopics));
+    instructions = generateCategorizationPrompt(JSON.stringify(learnedTopics), topicDepth);
   }
 
   let allCategorizations: any[] = [];  // TODO: replace with a more specific type
