@@ -49,30 +49,15 @@ const safetySettings = [
 
 const base_model_spec = {
   model: model,
-  generationConfig: {
+  generationConfig: { // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
     maxOutputTokens: 8192,
-    temperature: 1,
-    topP: 0.95,
+    temperature: 0,
+    topP: 0,
   },
   safetySettings: safetySettings,
 };
 
-const json_model_spec = {
-  model: model,
-  generationConfig: {
-    maxOutputTokens: 8192,
-    temperature: 1,
-    topP: 0.95,
-    response_mime_type: "application/json",
-  },
-  safetySettings: safetySettings,
-};
-
-// Instantiate the models
-const generativeModel = vertex_ai.getGenerativeModel(base_model_spec);
-const generativeJsonModel = vertex_ai.getGenerativeModel(json_model_spec);
-
-// Topic schema (TBC... doesn't work yet; see GH issue below)
+// Topic schema
 const topics_schema = {
   type: "array",
   items: {
@@ -91,6 +76,22 @@ const topics_schema = {
     },
   },
 };
+
+const json_model_spec = {
+  model: model,
+  generationConfig: {
+    maxOutputTokens: 8192,
+    temperature: 0,
+    topP: 0,
+    response_mime_type: "application/json",
+    responseSchema: topics_schema,
+  },
+  safetySettings: safetySettings,
+};
+
+// Instantiate the models
+const generativeModel = vertex_ai.getGenerativeModel(base_model_spec);
+const generativeJsonModel = vertex_ai.getGenerativeModel(json_model_spec);
 
 /**
  * Combines the data and instructions into a prompt to send to Vertex.
@@ -142,14 +143,7 @@ export async function executeRequest(
  * Utility function for sending a set of instructions to an LLM with comments,
  * and returning the results as JSON.
  */
-async function generateJSON(instructions: string, comments: string[]) {
-  /**
-   * this doesn't work yet, because of https://github.com/googleapis/nodejs-vertexai/issues/392
-   */
-  //const response = await generativeModel.generateContent({
-  //responseSchema: topics_schema // or is it response_schema?
-  //});
-
+export async function generateJSON(instructions: string, comments: string[]) {
   const req = getRequest(instructions, comments);
   const streamingResp = await generativeJsonModel.generateContentStream(req);
 
