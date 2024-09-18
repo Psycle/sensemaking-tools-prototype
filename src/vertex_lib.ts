@@ -19,8 +19,11 @@ import {
   HarmCategory,
   VertexAI,
 } from "@google-cloud/vertexai";
-import {generateTopicModelingPrompt} from "./tasks/topic_modeling";
-import {generateCategorizationPrompt, mergeCategorizations} from "./tasks/categorization";
+import { generateTopicModelingPrompt } from "./tasks/topic_modeling";
+import {
+  generateCategorizationPrompt,
+  mergeCategorizations,
+} from "./tasks/categorization";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
@@ -54,7 +57,8 @@ const safetySettings = [
 
 const base_model_spec = {
   model: model,
-  generationConfig: { // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
+  generationConfig: {
+    // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
     maxOutputTokens: 8192,
     temperature: 0,
     topP: 0,
@@ -116,14 +120,6 @@ function getRequest(instructions: string, data: string[]) {
   };
 }
 
-class FailedExecutionError extends Error {
-  constructor(public response: any, message?: string) {
-    super(message || "An error occurred calling Vertex");
-    this.name = "VertexAIExecutionError";
-    this.response = response;
-  }
-}
-
 /**
  * Lower level protocol for sending a set of instructions to an llm with
  * comments (which could contain summary information).
@@ -131,7 +127,7 @@ class FailedExecutionError extends Error {
 export async function executeRequest(
   instructions: string,
   comments: string[]
-): Promise<string | FailedExecutionError> {
+): Promise<string> {
   const req = getRequest(instructions, comments);
   const streamingResp = await generativeModel.generateContentStream(req);
 
@@ -140,7 +136,7 @@ export async function executeRequest(
     return response.candidates![0].content.parts[0].text;
   } else {
     console.warn("Malformed response: ", response);
-    throw new FailedExecutionError(response);
+    throw new Error("Error from Generative Model, response: " + response);
   }
 }
 
@@ -159,7 +155,7 @@ export async function generateJSON(instructions: string, comments: string[]) {
     return generatedJSON;
   } else {
     console.warn("Malformed response: ", response);
-    throw new FailedExecutionError(response);
+    throw new Error("Error from Generative Model, response: " + response);
   }
 }
 
@@ -187,12 +183,7 @@ export async function basicSummarize(
   instructions: string,
   comments: string[]
 ): Promise<string> {
-  const summaryResponse = await executeRequest(instructions, comments);
-  if (summaryResponse instanceof FailedExecutionError) {
-    throw summaryResponse;
-  } else {
-    return summaryResponse;
-  }
+  return await executeRequest(instructions, comments);
 }
 
 export interface VoteData {
@@ -203,8 +194,8 @@ export interface VoteData {
 }
 
 export interface CommentDataRow {
-  commentText: string,
-  groupVoteTallies: { [key: string]: VoteData }
+  commentText: string;
+  groupVoteTallies: { [key: string]: VoteData };
 }
 
 /**
@@ -212,9 +203,14 @@ export interface CommentDataRow {
  * @param commentData: the data to summarize, as an array of CommentDataRow objects
  * @returns: comments, together with vote tally information as JSON
  */
-export function formatCommentsWithVotes(commentData: CommentDataRow[]): string[] {
-  return commentData.map((row: CommentDataRow) =>
-    row.commentText + "\n  vote info per group: " + JSON.stringify(row.groupVoteTallies)
+export function formatCommentsWithVotes(
+  commentData: CommentDataRow[]
+): string[] {
+  return commentData.map(
+    (row: CommentDataRow) =>
+      row.commentText +
+      "\n  vote info per group: " +
+      JSON.stringify(row.groupVoteTallies)
   );
 }
 
@@ -228,12 +224,10 @@ export async function voteTallySummarize(
   instructions: string,
   commentData: CommentDataRow[]
 ): Promise<string> {
-  const summaryResponse = await executeRequest(instructions, formatCommentsWithVotes(commentData));
-  if (summaryResponse instanceof FailedExecutionError) {
-    throw summaryResponse;
-  } else {
-    return summaryResponse;
-  }
+  return await executeRequest(
+    instructions,
+    formatCommentsWithVotes(commentData)
+  );
 }
 
 /**
@@ -244,7 +238,7 @@ export async function voteTallySummarize(
  */
 function parseTopics(topics: string | undefined): string[] | undefined {
   if (topics && topics.trim() !== "") {
-    return topics.split(',').map(topic => topic.trim());
+    return topics.split(",").map((topic) => topic.trim());
   }
   // No need to return undefined explicitly here, as it's the default if the condition is false.
 }
@@ -256,14 +250,17 @@ function parseTopics(topics: string | undefined): string[] | undefined {
  * @param topics Optional. The user provided comma-separated string of top-level topics
  * @returns: The LLM's topic modeling.
  */
-export async function getTopics(comments: string[], topicDepth: number, topics?: string): Promise<string> {
+export async function getTopics(
+  comments: string[],
+  topicDepth: number,
+  topics?: string
+): Promise<string> {
   const parentTopics = parseTopics(topics);
-  const topicsResponse = await learnTopics(comments, { depth: topicDepth, parentTopics: parentTopics });
-  if (topicsResponse instanceof FailedExecutionError) {
-    throw topicsResponse;
-  } else {
-    return JSON.stringify(topicsResponse, null, 2);  // format and indent by 2 spaces
-  }
+  const topicsResponse = await learnTopics(comments, {
+    depth: topicDepth,
+    parentTopics: parentTopics,
+  });
+  return JSON.stringify(topicsResponse, null, 2); // format and indent by 2 spaces
 }
 
 /**
@@ -280,29 +277,29 @@ export async function categorize(
   topics?: string,
   instructions?: string
 ): Promise<string> {
-
   if (!instructions) {
     // Generate instructions if not supplied
     const parentTopics = parseTopics(topics);
-    const learnedTopics = await learnTopics(comments, { depth: topicDepth, parentTopics: parentTopics });
+    const learnedTopics = await learnTopics(comments, {
+      depth: topicDepth,
+      parentTopics: parentTopics,
+    });
 
-    instructions = generateCategorizationPrompt(JSON.stringify(learnedTopics), topicDepth);
+    instructions = generateCategorizationPrompt(
+      JSON.stringify(learnedTopics),
+      topicDepth
+    );
   }
 
-  let allCategorizations: any[] = [];  // TODO: replace with a more specific type
+  let allCategorizations: any[] = []; // TODO: replace with a more specific type
 
   const batchSize = 250; // TODO: make it an input param
   for (let i = 0; i < comments.length; i += batchSize) {
     const batch = comments.slice(i, i + batchSize);
 
     let categorizedBatch = await executeRequest(instructions, batch);
-
-    if (categorizedBatch instanceof FailedExecutionError) {
-      throw categorizedBatch;
-    } else {
-      mergeCategorizations(allCategorizations, JSON.parse(categorizedBatch));
-    }
+    mergeCategorizations(allCategorizations, JSON.parse(categorizedBatch));
   }
 
-  return JSON.stringify(allCategorizations, null, 2);  // format and indent by 2 spaces
+  return JSON.stringify(allCategorizations, null, 2); // format and indent by 2 spaces
 }
