@@ -20,6 +20,7 @@ import {
   VertexAI,
 } from "@google-cloud/vertexai";
 import { generateTopicModelingPrompt } from "./tasks/topic_modeling";
+import { Comment, Topic } from "./types";
 import {
   generateCategorizationPrompt,
   mergeCategorizations,
@@ -159,11 +160,6 @@ export async function generateJSON(instructions: string, comments: string[]) {
   }
 }
 
-interface Topic {
-  name: string;
-  subtopics?: Topic[];
-}
-
 export async function learnTopics(
   comments: string[],
   { depth = 1, parentTopics }: { depth?: number; parentTopics?: string[] }
@@ -186,43 +182,31 @@ export async function basicSummarize(
   return await executeRequest(instructions, comments);
 }
 
-export interface VoteData {
-  agreeCount: number;
-  disagreeCount: number;
-  passCount?: number;
-  totalCount: number;
-}
-
-export interface CommentDataRow {
-  commentText: string;
-  groupVoteTallies: { [key: string]: VoteData };
-}
-
 /**
  * Utility function for formatting the comments together with vote tally data
- * @param commentData: the data to summarize, as an array of CommentDataRow objects
+ * @param commentData: the data to summarize, as an array of Comment objects
  * @returns: comments, together with vote tally information as JSON
  */
 export function formatCommentsWithVotes(
-  commentData: CommentDataRow[]
+  commentData: Comment[]
 ): string[] {
   return commentData.map(
-    (row: CommentDataRow) =>
-      row.commentText +
+    (comment: Comment) =>
+      comment.text +
       "\n  vote info per group: " +
-      JSON.stringify(row.groupVoteTallies)
+      JSON.stringify(comment.voteTalliesByGroup)
   );
 }
 
 /**
  * Summarizes the comments using a LLM on Vertex.
  * @param instructions: how the comments should be summarized.
- * @param commentData: the data to summarize, as an array of CommentDataRow objects
+ * @param commentData: the data to summarize, as an array of Comment objects
  * @returns: the LLM's summarization.
  */
 export async function voteTallySummarize(
   instructions: string,
-  commentData: CommentDataRow[]
+  commentData: Comment[]
 ): Promise<string> {
   return await executeRequest(
     instructions,
@@ -291,13 +275,14 @@ export async function categorize(
     );
   }
 
-  let allCategorizations: any[] = []; // TODO: replace with a more specific type
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+  const allCategorizations: any[] = []; // TODO: replace with a more specific type
 
   const batchSize = 100; // TODO: make it an input param
   for (let i = 0; i < comments.length; i += batchSize) {
     const batch = comments.slice(i, i + batchSize);
 
-    let categorizedBatch = await executeRequest(instructions, batch);
+    const categorizedBatch = await executeRequest(instructions, batch);
     mergeCategorizations(allCategorizations, JSON.parse(categorizedBatch));
   }
 
