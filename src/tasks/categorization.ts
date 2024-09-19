@@ -95,8 +95,9 @@ Important Considerations:
 - Do not add \`\`\`json at the beginning of your response.
 - Before providing the final output, ensure that the generated JSON is valid and well-formed.
 
-Example of Incorrect Output:
+Example of Incorrect Output - invalid JSON syntax:
 
+...
   {
     "name": "Quality of Life",
     "subtopics": [
@@ -107,7 +108,15 @@ Example of Incorrect Output:
         ]
       ] // Incorrect: Should be a closing brace '}' here instead of a closing bracket ']'
     ]
-  },
+  ] // Incorrect: Should be a closing brace '}' here instead of a closing bracket ']'
+]
+
+Example of Incorrect Output - a subtopic with empty comments included in the output:
+
+{
+  "name": "Stormwater Management",
+  "comments": []  // Incorrect: a subtopic without comments should be removed from the output
+},
 `;
 }
 

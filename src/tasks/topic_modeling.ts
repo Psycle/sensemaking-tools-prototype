@@ -29,6 +29,8 @@ Follow these steps:
 1. **Define Topics:** Start by identifying the main topics. Use Title Case for topic names.
 2. **Identify Subtopics:** For each topic, identify relevant subtopics. Use Title Case for subtopic names.
 3. **Enforce Exclusion: It is absolutely crucial that no subtopic should have the same name as any of the main topics. Before adding any subtopic to a topic, rigorously check if a topic with the same name already exists. If it does, discard that subtopic completely and do not include it in any topic's list of subtopics.**
+
+Use Title Case for topic and subtopic names. Do not use capital case like "name": "INFRASTRUCTURE".
 `;
 
 export function learnSubtopicsPrompt(parentTopics: string[]): string {
