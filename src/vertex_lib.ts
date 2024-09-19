@@ -291,7 +291,7 @@ export async function categorize(
 
   let allCategorizations: any[] = [];  // TODO: replace with a more specific type
 
-  const batchSize = 250; // TODO: make it an input param
+  const batchSize = 100; // TODO: make it an input param
   for (let i = 0; i < comments.length; i += batchSize) {
     const batch = comments.slice(i, i + batchSize);
 
