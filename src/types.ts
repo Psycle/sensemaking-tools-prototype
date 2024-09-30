@@ -37,10 +37,10 @@ export class VoteTally {
  * A text that was voted on by different groups.
  */
 export interface Comment {
+  id: string;
   text: string;
-  // TODO: make this required
-  id?: string;
   voteTalliesByGroup?: { [key: string]: VoteTally };
+  topics?: Topic[];
 }
 
 /**

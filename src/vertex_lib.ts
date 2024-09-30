@@ -14,24 +14,17 @@
 
 // Module to interact with Vertex AI.
 
-import {
-  HarmBlockThreshold,
-  HarmCategory,
-  VertexAI,
-} from "@google-cloud/vertexai";
-import { generateTopicModelingPrompt } from "./tasks/topic_modeling";
-import { Comment, Topic } from "./types";
-import {
-  generateCategorizationPrompt,
-  mergeCategorizations,
-} from "./tasks/categorization";
+import {HarmBlockThreshold, HarmCategory, VertexAI} from "@google-cloud/vertexai";
+import {generateTopicModelingPrompt} from "./tasks/topic_modeling";
+import {Comment, Topic} from "./types";
+import {generateCategorizationPrompt} from "./tasks/categorization";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
   project: "conversation-ai-experiments",
   location: "us-central1",
 });
-const model = "gemini-1.5-pro-001";
+const model = "gemini-1.5-pro-002";
 
 const safetySettings = [
   {
@@ -56,7 +49,7 @@ const safetySettings = [
   },
 ];
 
-const base_model_spec = {
+const baseModelSpec = {
   model: model,
   generationConfig: {
     // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
@@ -87,7 +80,40 @@ const topics_schema = {
   },
 };
 
-const json_model_spec = {
+// TODO: create a separate schema for 1-tier categorization
+// For details see: https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
+const categorizationSchemaCommentsFirst = {
+  type: "array",
+  items: {
+    type: "object",
+    required: ["id", "topics"],
+    properties: {
+      id: { type: "string" }, // Comment id
+      topics: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["name", "subtopics"],
+          properties: {
+            name: { type: "string" }, // Topic name
+            subtopics: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["name"],
+                properties: {
+                  name: { type: "string" }, // Subtopic name
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+const jsonModelSpec = {
   model: model,
   generationConfig: {
     maxOutputTokens: 8192,
@@ -99,9 +125,22 @@ const json_model_spec = {
   safetySettings: safetySettings,
 };
 
+const jsonModelSpecForCategorization = {
+  model: model,
+  generationConfig: {
+    maxOutputTokens: 8192,
+    temperature: 0,
+    topP: 0,
+    response_mime_type: "application/json",
+    responseSchema: categorizationSchemaCommentsFirst,
+  },
+  safetySettings: safetySettings,
+};
+
 // Instantiate the models
-const generativeModel = vertex_ai.getGenerativeModel(base_model_spec);
-const generativeJsonModel = vertex_ai.getGenerativeModel(json_model_spec);
+const generativeModel = vertex_ai.getGenerativeModel(baseModelSpec);
+const generativeJsonModel = vertex_ai.getGenerativeModel(jsonModelSpec);
+const categorizationModel = vertex_ai.getGenerativeModel(jsonModelSpecForCategorization);
 
 /**
  * Combines the data and instructions into a prompt to send to Vertex.
@@ -110,7 +149,10 @@ const generativeJsonModel = vertex_ai.getGenerativeModel(json_model_spec);
  * @returns the instructions and the data as a text
  */
 export function getPrompt(instructions: string, data: string[]) {
-  return `${instructions} ${data.join()}`;
+  return `Instructions:
+${instructions}
+Comments:
+${data.join('\n')}`;  // separate comments with newlines
 }
 
 function getRequest(instructions: string, data: string[]) {
@@ -144,10 +186,16 @@ export async function executeRequest(
 /**
  * Utility function for sending a set of instructions to an LLM with comments,
  * and returning the results as JSON.
+ *
+ * @param instructions The instructions for the LLM on how to process the comments.
+ * @param comments The array of comments to be processed by the LLM.
+ * @param model The Vertex AI generative model instance to use for processing.
+ * @returns A Promise that resolves with the LLM's output parsed as a JSON object.
+ * @throws An error if the LLM's response is malformed or if there's an error during processing.
  */
-export async function generateJSON(instructions: string, comments: string[]) {
+export async function generateJSON(instructions: string, comments: string[], model: any): Promise<any> {
   const req = getRequest(instructions, comments);
-  const streamingResp = await generativeJsonModel.generateContentStream(req);
+  const streamingResp = await model.generateContentStream(req);
 
   const response = await streamingResp.response;
   if (response.candidates![0].content.parts[0].text) {
@@ -161,11 +209,12 @@ export async function generateJSON(instructions: string, comments: string[]) {
 }
 
 export async function learnTopics(
-  comments: string[],
+  comments: Comment[],
   { depth = 1, parentTopics }: { depth?: number; parentTopics?: string[] }
 ): Promise<Topic[]> {
   const instructions = generateTopicModelingPrompt(depth, parentTopics);
-  const response = await generateJSON(instructions, comments);
+  const commentTexts = comments.map(comment => comment.text);
+  const response = await generateJSON(instructions, commentTexts, generativeJsonModel);
   return response;
 }
 
@@ -177,9 +226,10 @@ export async function learnTopics(
  */
 export async function basicSummarize(
   instructions: string,
-  comments: string[]
+  comments: Comment[]
 ): Promise<string> {
-  return await executeRequest(instructions, comments);
+  const commentTexts = comments.map(comment => comment.text);
+  return await executeRequest(instructions, commentTexts);
 }
 
 /**
@@ -235,7 +285,7 @@ function parseTopics(topics: string | undefined): string[] | undefined {
  * @returns: The LLM's topic modeling.
  */
 export async function getTopics(
-  comments: string[],
+  comments: Comment[],
   topicDepth: number,
   topics?: string
 ): Promise<string> {
@@ -256,34 +306,29 @@ export async function getTopics(
  * @returns: The LLM's categorization.
  */
 export async function categorize(
-  comments: string[],
+  comments: Comment[],
   topicDepth: number,
-  topics?: string,
+  topics: string,
   instructions?: string
 ): Promise<string> {
   if (!instructions) {
-    // Generate instructions if not supplied
-    const parentTopics = parseTopics(topics);
-    const learnedTopics = await learnTopics(comments, {
-      depth: topicDepth,
-      parentTopics: parentTopics,
-    });
-
     instructions = generateCategorizationPrompt(
-      JSON.stringify(learnedTopics),
+      topics,
       topicDepth
     );
   }
 
-  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-  const allCategorizations: any[] = []; // TODO: replace with a more specific type
+  const allCategorizations: Comment[] = [];
 
   const batchSize = 100; // TODO: make it an input param
   for (let i = 0; i < comments.length; i += batchSize) {
     const batch = comments.slice(i, i + batchSize);
 
-    const categorizedBatch = await executeRequest(instructions, batch);
-    mergeCategorizations(allCategorizations, JSON.parse(categorizedBatch));
+    const uncategorizedCommentsStr = batch.map(comment =>
+      JSON.stringify({ id: comment.id, text: comment.text })
+    );
+    const categorizedBatch: Comment[] = await generateJSON(instructions, uncategorizedCommentsStr, categorizationModel);
+    allCategorizations.push(...categorizedBatch);
   }
 
   return JSON.stringify(allCategorizations, null, 2); // format and indent by 2 spaces

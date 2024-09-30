@@ -17,13 +17,18 @@ import { getPrompt, formatCommentsWithVotes } from "./vertex_lib";
 describe("VertexLibTest", () => {
   it("should create a prompt", () => {
     expect(getPrompt("Summarize this:", ["comment1", "comment2"])).toEqual(
-      "Summarize this: comment1,comment2"
+      "Instructions:\n" +
+      "Summarize this:\n" +
+      "Comments:\n" +
+      "comment1\n" +
+      "comment2"
     );
   });
   it("should format comments with vote tallies via formatCommentsWithVotes", () => {
     expect(
       formatCommentsWithVotes([
         {
+          id: "1",
           text: "comment1",
           voteTalliesByGroup: {
             "0": {
@@ -41,6 +46,7 @@ describe("VertexLibTest", () => {
           },
         },
         {
+          id: "2",
           text: "comment2",
           voteTalliesByGroup: {
             "0": {
