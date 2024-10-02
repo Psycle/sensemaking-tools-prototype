@@ -14,10 +14,16 @@
 
 // Module to interact with Vertex AI.
 
-import {HarmBlockThreshold, HarmCategory, VertexAI} from "@google-cloud/vertexai";
-import {generateTopicModelingPrompt} from "./tasks/topic_modeling";
-import {Comment, Topic} from "./types";
-import {generateCategorizationPrompt} from "./tasks/categorization";
+import { HarmBlockThreshold, HarmCategory, VertexAI } from "@google-cloud/vertexai";
+import { generateTopicModelingPrompt } from "./tasks/topic_modeling";
+import { Comment, Topic } from "./types";
+import {
+  addMissingTextToCategorizedComments,
+  findMissingComments,
+  generateCategorizationPrompt,
+  parseTopicsJson,
+  validateCategorizedComments,
+} from "./tasks/categorization";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
@@ -48,17 +54,6 @@ const safetySettings = [
     threshold: HarmBlockThreshold.BLOCK_NONE,
   },
 ];
-
-const baseModelSpec = {
-  model: model,
-  generationConfig: {
-    // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
-    maxOutputTokens: 8192,
-    temperature: 0,
-    topP: 0,
-  },
-  safetySettings: safetySettings,
-};
 
 // Topic schema
 const topics_schema = {
@@ -111,6 +106,17 @@ const categorizationSchemaCommentsFirst = {
       },
     },
   },
+};
+
+const baseModelSpec = {
+  model: model,
+  generationConfig: {
+    // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
+    maxOutputTokens: 8192,
+    temperature: 0,
+    topP: 0,
+  },
+  safetySettings: safetySettings,
 };
 
 const jsonModelSpec = {
@@ -280,7 +286,7 @@ function parseTopics(topics: string | undefined): string[] | undefined {
 /**
  * Extracts topics from the comments using a LLM on Vertex AI.
  * @param comments The comments data for topic modeling
- * @param topicDepth The user provided topics depth (1 or 2)
+ * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
  * @param topics Optional. The user provided comma-separated string of top-level topics
  * @returns: The LLM's topic modeling.
  */
@@ -300,36 +306,80 @@ export async function getTopics(
 /**
  * Categorize the comments by topics using a LLM on Vertex.
  * @param comments The data to summarize
- * @param topicDepth The user provided topics depth (1 or 2)
- * @param topics Optional. The user provided top-level topics
+ * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
+ * @param topics The user provided top-level topics in JSON format following the interface `Topic`.
  * @param instructions Optional. How the comments should be categorized.
+ * @param batchSize The number of comments to send to the LLM in each batch. Defaults to 100.
  * @returns: The LLM's categorization.
  */
 export async function categorize(
   comments: Comment[],
   topicDepth: number,
   topics: string,
-  instructions?: string
+  instructions?: string,
+  batchSize = 100
 ): Promise<string> {
+  // Either use provided instructions or generate them based in the provided topics structure.
   if (!instructions) {
-    instructions = generateCategorizationPrompt(
-      topics,
-      topicDepth
-    );
+    instructions = generateCategorizationPrompt(topics, topicDepth);
   }
 
-  const allCategorizations: Comment[] = [];
+  // Parse the topics JSON string into an array of Topic objects for easy access to topic names during validation.
+  const topicsJson: Topic[] = parseTopicsJson(topics);
 
-  const batchSize = 100; // TODO: make it an input param
+  // Call the model in batches, validate results and retry if needed.
+  const categorized: Comment[] = [];
   for (let i = 0; i < comments.length; i += batchSize) {
-    const batch = comments.slice(i, i + batchSize);
+    const uncategorizedBatch = comments.slice(i, i + batchSize);
+    const categorizedBatch = await categorizeWithRetry(instructions, uncategorizedBatch, topicDepth, topicsJson);
+    categorized.push(...categorizedBatch);
+  }
 
-    const uncategorizedCommentsStr = batch.map(comment =>
+  return JSON.stringify(categorized, null, 2); // format and indent by 2 spaces
+}
+
+/**
+ * Makes API call to generate JSON and retries with any comments that were not properly categorized.
+ * @param instructions Instructions for the LLM on how to categorize the comments.
+ * @param inputComments The comments to categorize.
+ * @param topicDepth The user provided topics depth (1 or 2)
+ * @param topics The topics and subtopics provided to the LLM for categorization.
+ * @returns The categorized comments.
+ */
+export async function categorizeWithRetry(instructions: string, inputComments: Comment[], topicDepth: number, topics: Topic[]): Promise<Comment[]> {
+  // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
+  let uncategorized: Comment[] = [...inputComments];
+  const categorized: Comment[] = [];
+  // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
+  const inputCommentsLookup = new Map<string, Comment>(inputComments.map(comment => [comment.id, comment]));
+
+  // Start a while loop running until all comments are properly categorized
+  do {
+    // convert JSON to string representation that will be sent to the model
+    const uncategorizedCommentsForModel: string[] = uncategorized.map(comment =>
       JSON.stringify({ id: comment.id, text: comment.text })
     );
-    const categorizedBatch: Comment[] = await generateJSON(instructions, uncategorizedCommentsStr, categorizationModel);
-    allCategorizations.push(...categorizedBatch);
-  }
+    // call the model
+    const newCategorized: any[] = await generateJSON(instructions, uncategorizedCommentsForModel, categorizationModel);
+    // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
+    const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(newCategorized, inputCommentsLookup);
 
-  return JSON.stringify(allCategorizations, null, 2); // format and indent by 2 spaces
+    // PERFORM VALIDATION
+    // Check for comments that were never in the input, have no topics, or non-matching topic names.
+    const {
+      commentsPassedValidation,
+      commentsWithInvalidTopics
+    } = validateCategorizedComments(newCategorizedComments, inputComments, topicDepth, topics);
+    categorized.push(...commentsPassedValidation);
+    // Check for comments completely missing in the model's response
+    const missingComments: Comment[] = findMissingComments(newCategorizedComments, uncategorized);
+    // Reset uncategorized: combine all invalid comments for retry
+    uncategorized = [...missingComments, ...commentsWithInvalidTopics];
+
+    if (uncategorized.length > 0) {
+      console.warn(`Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying...`);
+    }
+  } while (uncategorized.length > 0);
+
+  return categorized;
 }
