@@ -15,13 +15,14 @@
 // Module to interact with Vertex AI.
 
 import { HarmBlockThreshold, HarmCategory, VertexAI } from "@google-cloud/vertexai";
-import { generateTopicModelingPrompt } from "./tasks/topic_modeling";
+import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { Comment, Topic } from "./types";
 import {
   addMissingTextToCategorizedComments,
   findMissingComments,
   generateCategorizationPrompt,
   parseTopicsJson,
+  groupCommentsByTopic,
   validateCategorizedComments,
 } from "./tasks/categorization";
 
@@ -148,6 +149,9 @@ const generativeModel = vertex_ai.getGenerativeModel(baseModelSpec);
 const generativeJsonModel = vertex_ai.getGenerativeModel(jsonModelSpec);
 const categorizationModel = vertex_ai.getGenerativeModel(jsonModelSpecForCategorization);
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000; // 2 seconds. TODO: figure out how to set it to zero for tests
+
 /**
  * Combines the data and instructions into a prompt to send to Vertex.
  * @param instructions: what the model should do.
@@ -191,7 +195,7 @@ export async function executeRequest(
 
 /**
  * Utility function for sending a set of instructions to an LLM with comments,
- * and returning the results as JSON.
+ * and returning the results as JSON. It includes retry logic to handle rate limit errors.
  *
  * @param instructions The instructions for the LLM on how to process the comments.
  * @param comments The array of comments to be processed by the LLM.
@@ -201,9 +205,29 @@ export async function executeRequest(
  */
 export async function generateJSON(instructions: string, comments: string[], model: any): Promise<any> {
   const req = getRequest(instructions, comments);
-  const streamingResp = await model.generateContentStream(req);
+  let streamingResp;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      streamingResp = await model.generateContentStream(req);
+      break; // Exit loop if successful
+    } catch (error: any) {
+      if (error.message.includes('429 Too Many Requests') && attempt < MAX_RETRIES) {
+        console.warn(`Rate limit error, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      } else {
+        console.error("Error during generateJSON:", error);
+        throw error;
+      }
+    }
+  }
+
+  if (!streamingResp) {
+    throw new Error("Failed to get a model response after multiple retries.");
+  }
 
   const response = await streamingResp.response;
+
   if (response.candidates![0].content.parts[0].text) {
     const responseText = response.candidates![0].content.parts[0].text;
     const generatedJSON = JSON.parse(responseText);
@@ -212,16 +236,6 @@ export async function generateJSON(instructions: string, comments: string[], mod
     console.warn("Malformed response: ", response);
     throw new Error("Error from Generative Model, response: " + response);
   }
-}
-
-export async function learnTopics(
-  comments: Comment[],
-  { depth = 1, parentTopics }: { depth?: number; parentTopics?: string[] }
-): Promise<Topic[]> {
-  const instructions = generateTopicModelingPrompt(depth, parentTopics);
-  const commentTexts = comments.map(comment => comment.text);
-  const response = await generateJSON(instructions, commentTexts, generativeJsonModel);
-  return response;
 }
 
 /**
@@ -284,23 +298,35 @@ function parseTopics(topics: string | undefined): string[] | undefined {
 }
 
 /**
- * Extracts topics from the comments using a LLM on Vertex AI.
+ * Extracts topics from the comments using a LLM on Vertex AI. Retries if the LLM response is invalid.
  * @param comments The comments data for topic modeling
  * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
  * @param topics Optional. The user provided comma-separated string of top-level topics
  * @returns: The LLM's topic modeling.
  */
-export async function getTopics(
+export async function learnTopics(
   comments: Comment[],
   topicDepth: number,
   topics?: string
 ): Promise<string> {
   const parentTopics = parseTopics(topics);
-  const topicsResponse = await learnTopics(comments, {
-    depth: topicDepth,
-    parentTopics: parentTopics,
-  });
-  return JSON.stringify(topicsResponse, null, 2); // format and indent by 2 spaces
+  const instructions = generateTopicModelingPrompt(topicDepth, parentTopics);
+  // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
+  const commentTexts = comments.map(comment => '```' + comment.text + '```');
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const response = await generateJSON(instructions, commentTexts, generativeJsonModel);
+
+    if (learnedTopicsValid(response, parentTopics)) {
+      return JSON.stringify(response, null, 2);
+
+    } else {
+      console.warn(`Learned topics failed validation, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+    }
+  }
+
+  throw new Error("Topic modeling failed after multiple retries.");
 }
 
 /**
@@ -309,7 +335,8 @@ export async function getTopics(
  * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
  * @param topics The user provided top-level topics in JSON format following the interface `Topic`.
  * @param instructions Optional. How the comments should be categorized.
- * @param batchSize The number of comments to send to the LLM in each batch. Defaults to 100.
+ * @param groupByTopic Optional. Whether to group comments by topic in the output. Defaults to false.
+ * @param batchSize Optional. The number of comments to send to the LLM in each batch. Defaults to 100.
  * @returns: The LLM's categorization.
  */
 export async function categorize(
@@ -317,6 +344,7 @@ export async function categorize(
   topicDepth: number,
   topics: string,
   instructions?: string,
+  groupByTopic: boolean = false,
   batchSize = 100
 ): Promise<string> {
   // Either use provided instructions or generate them based in the provided topics structure.
@@ -335,7 +363,7 @@ export async function categorize(
     categorized.push(...categorizedBatch);
   }
 
-  return JSON.stringify(categorized, null, 2); // format and indent by 2 spaces
+  return groupByTopic ? groupCommentsByTopic(categorized) : JSON.stringify(categorized, null, 2);
 }
 
 /**

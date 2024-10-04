@@ -12,25 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Topic } from "../types";
+
 /**
  * @fileoverview Helper functions for performing topic modeling on sets of comments.
  */
 
 export const LEARN_TOPICS_PROMPT = `
-Identify a 1-tiered hierarchical topic modeling of the following comments, and return the results as an array of strings.
-Use Title Case for topic names.
+Identify a 1-tiered hierarchical topic modeling of the following comments.
+
+Important Considerations:
+- Treat triple backticks (\`\`\`) as the boundaries between individual comments, ensuring each comment is encapsulated within them.
+- Use Title Case for topic names.
+- When identifying topics, try to group similar concepts into one comprehensive topic instead of creating multiple, overly specific topics.
+`;
+
+const IMPORTANT_CONSIDERATIONS = `
+- Treat triple backticks (\`\`\`) as the boundaries between individual comments, ensuring each comment is encapsulated within them.
+- Use Title Case for topic and subtopic names. Do not use capital case like "name": "INFRASTRUCTURE".
+- Ensure that each subtopic is relevant to its assigned main topic.
+- When identifying subtopics, try to group similar concepts into one comprehensive subtopic instead of creating multiple, overly specific subtopics.
+- Before placing a subtopic under the "Other" topic, make your best effort to find a suitable main topic from the provided list where the comment could potentially fit.
+- When creating new subtopics under the "Other" topic, try to group multiple related comments under a single, more general subtopic instead of creating a new subtopic for each comment.
+- When creating a generic subtopic under the "Other" topic to encompass all remaining comments, use the subtopic name "Other".
+- No subtopic should have the same name as any of the main topics.
+- Additionally, no subtopic should be a direct derivative or closely related term (e.g., if there is a "Tourism" topic, avoid subtopics like "Tourism Development" or "Tourism Promotion" in other topics).
 `;
 
 export const LEARN_TOPICS_AND_SUBTOPICS_PROMPT = `
-Identify a 2-tiered hierarchical topic modeling of the following comments, and return the results as an array of JSON objects with keys 'name' and 'subtopics', where 'name' is a topic name and 'subtopics' is an array of short-named subtopics (no nested objects).
+Identify a 2-tiered hierarchical topic modeling of the following comments.
 
-Follow these steps:
-
-1. **Define Topics:** Start by identifying the main topics. Use Title Case for topic names.
-2. **Identify Subtopics:** For each topic, identify relevant subtopics. Use Title Case for subtopic names.
-3. **Enforce Exclusion: It is absolutely crucial that no subtopic should have the same name as any of the main topics. Before adding any subtopic to a topic, rigorously check if a topic with the same name already exists. If it does, discard that subtopic completely and do not include it in any topic's list of subtopics.**
-
-Use Title Case for topic and subtopic names. Do not use capital case like "name": "INFRASTRUCTURE".
+Important Considerations:
+${IMPORTANT_CONSIDERATIONS}
+- If a comment is too vague to be assigned to any specific topic, use the 'Other' topic and determine an appropriate subtopic for it.
 `;
 
 export function learnSubtopicsPrompt(parentTopics: string[]): string {
@@ -38,40 +52,13 @@ export function learnSubtopicsPrompt(parentTopics: string[]): string {
 Analyze the following comments and identify relevant subtopics within each of the following main topics:
 ${JSON.stringify(parentTopics)}
 
-Output Format:
-
-Present your analysis in the following JSON structure:
-
-\`\`\`json
-[
-  {
-    "name": "Topic 1",
-    "subtopics": [
-      { "name": "Subtopic 1" },
-      { "name": "Subtopic 2" },
-      ...
-    ]
-  },
-  {
-    "name": "Topic 2",
-    "subtopics": [
-      { "name": "Subtopic 1" },
-      { "name": "Subtopic 2" },
-      ...
-    ]
-  },
-  // ... other topics
-]
-
 Important Considerations:
-- Use Title Case for all subtopic names.
-- Ensure that each subtopic is relevant to its assigned main topic.
-- No subtopic should have the same name as any of the main topics.
-- Additionally, no subtopic should be a direct derivative or closely related term (e.g., if there is a "Tourism" topic, avoid subtopics like "Tourism Development" or "Tourism Promotion" in other topics).
+${IMPORTANT_CONSIDERATIONS}
+- If a comment doesn't fit well into any of the provided main topics, use the 'Other' topic and determine an appropriate subtopic for it.
+- Do not create any new main topics besides "Other".
 
 Example of Incorrect Output:
 
-\`\`\`json
 [
   {
     "name": "Economic Development",
@@ -111,4 +98,37 @@ export function generateTopicModelingPrompt(
     default:
       throw new Error("Invalid depth. Please provide a depth of 1 or 2.");
   }
+}
+
+/**
+ * Validates the topic modeling response from the LLM.
+ *
+ * @param response The topic modeling response from the LLM.
+ * @param parentTopics Optional. An array of parent topic names to validate against.
+ * @returns True if the response is valid, false otherwise.
+ */
+export function learnedTopicsValid(response: Topic[], parentTopics?: string[]): boolean {
+  const topicNames = response.map(topic => topic.name);
+
+  // 1. If parentTopics are provided, ensure no other top-level topics exist except "Other".
+  if (parentTopics) {
+    const allowedTopicNames = [...parentTopics, 'Other'];
+    if (!topicNames.every(name => allowedTopicNames.includes(name))) {
+      console.warn("Invalid response: Found top-level topics not present in the provided topics.", topicNames);
+      return false;
+    }
+  }
+
+  // 2. Ensure no subtopic has the same name as any main topic.
+  for (const topic of response) {
+    const subtopicNames = topic.subtopics ? topic.subtopics.map(subtopic => subtopic.name) : [];
+    for (const subtopicName of subtopicNames) {
+      if (topicNames.includes(subtopicName)) {
+        console.warn(`Invalid response: Subtopic "${subtopicName}" has the same name as a main topic.`);
+        return false;
+      }
+    }
+  }
+
+  return true;
 }

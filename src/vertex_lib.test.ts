@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { categorize, categorizeWithRetry, getPrompt, formatCommentsWithVotes } from "./vertex_lib";
+import {
+  categorize,
+  categorizeWithRetry,
+  generateJSON,
+  getPrompt,
+  formatCommentsWithVotes,
+  learnTopics
+} from "./vertex_lib";
 import { Comment, Topic } from "./types";
 
 // Mock the VertexAI module - this mock will be used when the module is imported within a test run.
@@ -118,7 +125,7 @@ describe("categorize", () => {
     const batch2Response = `[{"id": "2", "text": "Comment 2", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
     mockSingleModelResponse(generateContentStreamMock, batch2Response);
 
-    const categorizedComments = await categorize(comments, topicDepth, topics, undefined, batchSize);
+    const categorizedComments = await categorize(comments, topicDepth, topics, undefined, false, batchSize);
 
     // Assert the mock was called twice (for two batches)
     expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
@@ -167,5 +174,112 @@ describe("categorize", () => {
       { id: "3", text: "Comment 3", topics: [{ name: "Topic 1", subtopics: [] }] },
     ];
     expect(categorizedComments).toEqual(expected);
+  });
+});
+
+describe("generateJSON", () => {
+  it("should retry on rate limit error and return valid JSON", async () => {
+    const instructions = "Some instructions";
+    const comments = ["Comment 1", "Comment 2"];
+    const expectedJSON = { result: "success" };
+
+    // if we can pass the model mock directly to the function where it's being called (instead of relying on import),
+    // then we don't need to use something like `jest.requireMock("@google-cloud/vertexai").generativeJsonModelMock`
+    const generativeJsonModelMock = {
+      generateContentStream: jest.fn(),
+    };
+    const generateContentStreamMock = generativeJsonModelMock.generateContentStream;
+
+    // Mock the first call to throw a rate limit error
+    generateContentStreamMock.mockImplementationOnce(() => {
+      throw new Error("429 Too Many Requests");
+    });
+
+    // Mock the second call to return the expected JSON
+    mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedJSON));
+
+    const result = await generateJSON(instructions, comments, generativeJsonModelMock);
+
+    // Assert that the mock was called twice (initial call + retry)
+    expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
+
+    // Assert that the result is the expected JSON
+    expect(result).toEqual(expectedJSON);
+  });
+});
+
+describe("learnTopics", () => {
+  it("should retry topic modeling with invalid responses", async () => {
+    const comments: Comment[] = [
+      { id: "1", text: "Comment about Roads" },
+      { id: "2", text: "Comment about Parks" },
+      { id: "3", text: "Another comment about Roads" },
+    ];
+    const topicDepth = 2;
+    const topics = 'Infrastructure, Environment';
+
+    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
+
+    // Invalid: Subtopic "Environment" has the same name as a main topic
+    const invalidResponse1 = `[
+      {
+        "name": "Infrastructure",
+        "subtopics": [
+          { "name": "Roads" },
+          { "name": "Environment" }
+        ]
+      },
+      {
+        "name": "Environment",
+        "subtopics": [
+          { "name": "Parks" }
+        ]
+      }
+    ]`;
+    mockSingleModelResponse(generateContentStreamMock, invalidResponse1);
+
+    // Invalid: Top-level topic "Economy" in not in parentTopics and not "Other"
+    const invalidResponse2 = `[
+      {
+        "name": "Infrastructure",
+        "subtopics": [
+          { "name": "Roads" }
+        ]
+      },
+      {
+        "name": "Environment",
+        "subtopics": [
+          { "name": "Parks" }
+        ]
+      },
+      {
+        "name": "Economy",
+        "subtopics": []
+      }
+    ]`;
+    mockSingleModelResponse(generateContentStreamMock, invalidResponse2);
+
+    const validResponse = `[
+      {
+        "name": "Infrastructure",
+        "subtopics": [
+          { "name": "Roads" }
+        ]
+      },
+      {
+        "name": "Environment",
+        "subtopics": [
+          { "name": "Parks" }
+        ]
+      }
+    ]`;
+    mockSingleModelResponse(generateContentStreamMock, validResponse);
+
+    const categorizedComments = await learnTopics(comments, topicDepth, topics);
+
+    // Assert the mock was called 3 times (initial call and 2 retries)
+    expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
+
+    expect(categorizedComments).toEqual(JSON.stringify(JSON.parse(validResponse), null, 2));
   });
 });

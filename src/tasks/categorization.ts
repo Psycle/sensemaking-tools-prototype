@@ -274,3 +274,40 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
     throw new Error("Invalid topics JSON string. Please provide a valid JSON array of Topic objects.");
   }
 }
+
+/**
+ * Groups categorized comments by topic and subtopic.
+ *
+ * @param categorizedComments An array of categorized comments.
+ * @returns A JSON string representing the comments grouped by topic and subtopic.
+ *
+ * Example:
+ * {
+ *   "Topic 1": {
+ *     "Subtopic 2": {
+ *       "id 1": "comment 1",
+ *       "id 2": "comment 2"
+ *     }
+ *   }
+ * }
+ */
+export function groupCommentsByTopic(categorized: Comment[]): string {
+  const commentsByTopics: { [topicName: string]: { [subtopicName: string]: { [commentId: string]: string } } } = {};
+  for (const comment of categorized) {
+    if (!comment.topics || comment.topics.length === 0) {
+      throw new Error(`Comment with ID ${comment.id} has no topics assigned.`);
+    }
+    for (const topic of comment.topics) {
+      if (!commentsByTopics[topic.name]) {
+        commentsByTopics[topic.name] = {};  // init new topic name
+      }
+      for (const subtopic of topic.subtopics || []) {
+        if (!commentsByTopics[topic.name][subtopic.name]) {
+          commentsByTopics[topic.name][subtopic.name] = {};  // init new subtopic name
+        }
+        commentsByTopics[topic.name][subtopic.name][comment.id] = comment.text;
+      }
+    }
+  }
+  return JSON.stringify(commentsByTopics, null, 2);
+}

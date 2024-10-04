@@ -16,6 +16,7 @@ import {
   addMissingTextToCategorizedComments,
   findMissingComments,
   generateCategorizationPrompt,
+  groupCommentsByTopic,
   validateCategorizedComments
 } from './categorization';
 import { Comment, Topic } from "../types";
@@ -263,5 +264,60 @@ describe('findMissingComments', () => {
       { id: "1", text: "Comment 1", topics: [] },
       { id: "2", text: "Comment 2", topics: [] },
     ]);
+  });
+});
+
+describe('groupCommentsByTopic', () => {
+  it('should group comments by topic and subtopic', () => {
+    const categorizedComments: Comment[] = [
+      {
+        id: "1",
+        text: "Comment 1",
+        topics: [
+          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
+          { name: "Topic 2", subtopics: [{ name: "Subtopic 2.1" }] },
+        ],
+      },
+      {
+        id: "2",
+        text: "Comment 2",
+        topics: [
+          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
+          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.2" }] },
+        ],
+      },
+    ];
+
+    const expectedOutput = {
+      "Topic 1": {
+        "Subtopic 1.1": {
+          "1": "Comment 1",
+          "2": "Comment 2"
+        },
+        "Subtopic 1.2": {
+          "2": "Comment 2",
+        }
+      },
+      "Topic 2": {
+        "Subtopic 2.1": {
+          "1": "Comment 1"
+        }
+      }
+    };
+
+    const result = groupCommentsByTopic(categorizedComments);
+    expect(JSON.parse(result)).toEqual(expectedOutput);
+  });
+
+  it('should throw an error if a comment has no topics', () => {
+    const categorizedComments: Comment[] = [
+      {
+        id: "1",
+        text: "Comment 1",
+        topics: [], // No topics assigned
+      },
+    ];
+
+    expect(() => groupCommentsByTopic(categorizedComments)).toThrow("Comment with ID 1 has no topics assigned.");
   });
 });
