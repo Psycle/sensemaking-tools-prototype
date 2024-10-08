@@ -81,22 +81,21 @@ Example of Incorrect Output:
 /**
  * Generates an LLM prompt for topic modeling of a set of comments.
  *
- * @param depth - The desired depth of the topic hierarchy (1 or 2).
+ * @param includeSubtopics - Whether to include subtopics in the topic modeling.
  * @param parentTopics - Optional. An array of top-level topics to use.
  * @returns The generated prompt string.
  */
 export function generateTopicModelingPrompt(
-  depth: number,
+  includeSubtopics: boolean,
   parentTopics?: string[]
 ): string {
 
-  switch (depth) {
-    case 1:
-      return LEARN_TOPICS_PROMPT;
-    case 2:
-      return parentTopics?.length ? learnSubtopicsPrompt(parentTopics) : LEARN_TOPICS_AND_SUBTOPICS_PROMPT;
-    default:
-      throw new Error("Invalid depth. Please provide a depth of 1 or 2.");
+  if (!includeSubtopics) {
+    return LEARN_TOPICS_PROMPT;
+  } else if (parentTopics?.length) {
+    return learnSubtopicsPrompt(parentTopics);
+  } else {
+    return LEARN_TOPICS_AND_SUBTOPICS_PROMPT;
   }
 }
 

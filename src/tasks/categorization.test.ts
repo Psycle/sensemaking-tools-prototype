@@ -22,28 +22,24 @@ import {
 import { Comment, Topic } from "../types";
 
 describe('generateCategorizationPrompt', () => {
-  const sampleTopics = `
-[{"name":"Economic Development","subtopics":[{"name":"Job Creation"},{"name":"Business Growth"}]},
-{"name":"Housing","subtopics":[{"name":"Affordable Housing Options"},{"name":"Rental Market Prices"}]}]
-`;
-
-  it('should generate a 1-level categorization prompt', () => {
-    const topicDepth = 1;
-    const prompt = generateCategorizationPrompt(sampleTopics, topicDepth);
+  it('should generate a 1-level categorization prompt (topics only)', () => {
+    const sampleTopics: Topic[] = [{ name: "Economic Development" }, { name: "Housing" }];
+    const includeSubtopics = false;
+    const prompt = generateCategorizationPrompt(sampleTopics, includeSubtopics);
     expect(prompt).toContain('For each of the following comments, identify the most relevant topic from the list below.');
     expect(prompt).toContain('Economic Development');
   });
 
-  it('should generate a 2-level categorization prompt', () => {
-    const topicDepth = 2;
-    const prompt = generateCategorizationPrompt(sampleTopics, topicDepth);
+  it('should generate a 2-level categorization prompt (topics and subtopics)', () => {
+    const sampleTopics: Topic[] = [
+      { name: "Economic Development", subtopics: [{ name: "Job Creation" }, { name: "Business Growth" }] },
+      { name: "Housing", subtopics: [{ name: "Affordable Housing Options" }, { name: "Rental Market Prices" }] }
+    ];
+    const includeSubtopics = true;
+    const prompt = generateCategorizationPrompt(sampleTopics, includeSubtopics);
     expect(prompt).toContain('For each of the following comments, identify the most relevant topic and subtopic from the list below.');
     expect(prompt).toContain('Economic Development');
-  });
-
-  it('should throw an error for more than two levels topics', () => {
-    const topicDepth = 3;
-    expect(() => generateCategorizationPrompt(sampleTopics, topicDepth)).toThrow("Invalid topic depth. Please provide a depth of 1 or 2.");
+    expect(prompt).toContain('Job Creation');
   });
 });
 
@@ -104,7 +100,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(2);
     expect(commentsWithInvalidTopics.length).toBe(0);
   });
@@ -118,7 +114,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(2);
     expect(commentsWithInvalidTopics.length).toBe(0);
   });
@@ -131,7 +127,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1);
     expect(commentsWithInvalidTopics.length).toBe(1);
   });
@@ -144,7 +140,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1);
     expect(commentsWithInvalidTopics.length).toBe(1);
   });
@@ -157,14 +153,15 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1);
     expect(commentsWithInvalidTopics.length).toBe(1);
   });
 
   it('should filter out a comment with one valid and one invalid topic name', () => {
     const categorizedComments: Comment[] = [
-      { id: "1", text: "Comment 1", topics: [
+      {
+        id: "1", text: "Comment 1", topics: [
           { name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] },
           { name: "Invalid Topic", subtopics: [{ name: "Subtopic 2" }] }
         ]
@@ -174,7 +171,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1); // Only Comment 2 should pass
     expect(commentsWithInvalidTopics.length).toBe(1); // Comment 1 should fail
   });
@@ -187,24 +184,27 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1);
     expect(commentsWithInvalidTopics.length).toBe(1);
   });
 
   it('should filter out a comment with one valid and one invalid subtopic name', () => {
     const categorizedComments: Comment[] = [
-      { id: "1", text: "Comment 1", topics: [{ name: "Topic 1", subtopics: [
+      {
+        id: "1", text: "Comment 1", topics: [{
+          name: "Topic 1", subtopics: [
             { name: "Subtopic 1" },
             { name: "Invalid Subtopic" }
-          ] }]
+          ]
+        }]
       },
       { id: "2", text: "Comment 2", topics: [{ name: "Topic 2", subtopics: [{ name: "Subtopic 2" }] }] },
     ];
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(1); // Only Comment 2 should pass
     expect(commentsWithInvalidTopics.length).toBe(1); // Comment 1 should fail
   });
@@ -217,7 +217,7 @@ describe('validateCategorizedComments', () => {
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(categorizedComments, inputComments, 2, topics);
+    } = validateCategorizedComments(categorizedComments, inputComments, true, topics);
     expect(commentsPassedValidation.length).toBe(2);
     expect(commentsWithInvalidTopics.length).toBe(0);
   });

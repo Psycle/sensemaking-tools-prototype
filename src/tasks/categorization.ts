@@ -18,60 +18,50 @@ import {Comment, Topic} from "../types";
  * @fileoverview Helper functions for performing comments categorization.
  */
 
-export function topicCategorizationPrompt(topics: string): string {
+export function topicCategorizationPrompt(topics: Topic[]): string {
   return `
 For each of the following comments, identify the most relevant topic from the list below.
 
-Main Topics:
-${topics}
+Input Topics:
+${JSON.stringify(topics)}
 
 Important Considerations:
 - Ensure the assigned topic accurately reflects the meaning of the comment.
 - A comment can be assigned to multiple topics if relevant.
 - Prioritize using the existing topics whenever possible.
-- All comments must be assigned at least one topic.
+- All comments must be assigned at least one existing topic.
 - If no existing topic fits a comment well, assign it to the "Other" topic.
-- Do not create any new topics besides "Other".
+- Do not create any new topics that are not listed in the Input Topics.
 `;
 }
 
-export function subtopicCategorizationPrompt(topics: string): string {
+export function subtopicCategorizationPrompt(topics: Topic[]): string {
   return `
 For each of the following comments, identify the most relevant topic and subtopic from the list below.
 
-Main Topics and Subtopics:
-${topics}
+Input Topics and Subtopics (JSON formatted):
+${JSON.stringify(topics)}
 
 Important Considerations:
 - Ensure the assignment of comments to subtopics is accurate and reflects the meaning of the comment.
 - If comments relate to multiple topics, they should be added to each of the corresponding topics and their relevant subtopics.
 - Prioritize assigning comments to existing subtopics whenever possible.
-- All comments must be assigned to at least one topic and subtopic.
-- If no existing subtopic can be reasonably applied to a comment, assign it to the "Other" subtopic under the relevant main topic.
-- If no existing topic or subtopic can be reasonably applied to a comment, assign it to the 'Other' topic and the 'Other' subtopic.
-- Do not create any new topics or subtopics besides "Other".
+- All comments must be assigned to at least one existing topic and subtopic.
+- If none of the provided topic–subtopic pairs accurately fit the comment, assign it to the 'Other' topic and its 'Other' subtopic.
+- Do not create any new topics that are not listed in the Input Topics and Subtopics.
+- Do not create any new subtopics that are not listed in the Input Topics and Subtopics.
 `;
 }
 
 /**
  * Generates a prompt for an LLM to categorize comments based on a predefined set of topics (and subtopics).
  *
- * @param topics A JSON string representing the hierarchy of topics (and optional subtopics).
- *   The structure should be an array of objects, where each object has a "name" property (for the topic)
- *   and a "subtopics" property (an array of objects with "name" properties for subtopics).
- *
- * @param topicDepth The user provided topics depth (1 or 2)
+ * @param topics The user provided topics (and subtopic).
+ * @param includeSubtopics Whether to include subtopics in the categorization.
  * @returns The generated prompt string, including instructions, output format, and considerations for categorization.
  */
-export function generateCategorizationPrompt(topics: string, topicDepth: number): string {
-  switch (topicDepth) {
-    case 1:
-      return topicCategorizationPrompt(topics);
-    case 2:
-      return subtopicCategorizationPrompt(topics);
-    default:
-      throw new Error("Invalid topic depth. Please provide a depth of 1 or 2.");
-  }
+export function generateCategorizationPrompt(topics: Topic[], includeSubtopics: boolean): string {
+  return includeSubtopics ? subtopicCategorizationPrompt(topics) : topicCategorizationPrompt(topics);
 }
 
 /**
@@ -81,7 +71,7 @@ export function generateCategorizationPrompt(topics: string, topicDepth: number)
  *  - Invalid topic or subtopic names
  * @param categorizedComments The categorized comments to validate.
  * @param inputComments The original input comments.
- * @param topicDepth The user provided topics depth (1 or 2).
+ * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param topics The topics and subtopics provided to the LLM for categorization.
  * @returns An object containing:
  *  - `validCategorizedComments`: An array of validated categorized comments.
@@ -90,7 +80,7 @@ export function generateCategorizationPrompt(topics: string, topicDepth: number)
 export function validateCategorizedComments(
   categorizedComments: Comment[],
   inputComments: Comment[],
-  topicDepth: number,
+  includeSubtopics: boolean,
   topics: Topic[]
 ): { commentsPassedValidation: Comment[], commentsWithInvalidTopics: Comment[] } {
   const commentsPassedValidation: Comment[] = [];
@@ -105,12 +95,12 @@ export function validateCategorizedComments(
       return; // Skip to the next comment
     }
 
-    if (hasEmptyTopicsOrSubtopics(comment, topicDepth)) {
+    if (hasEmptyTopicsOrSubtopics(comment, includeSubtopics)) {
       commentsWithInvalidTopics.push(comment);
       return; // Skip to the next comment
     }
 
-    if (hasInvalidTopicNames(comment, topicDepth, topicLookup)) {
+    if (hasInvalidTopicNames(comment, includeSubtopics, topicLookup)) {
       commentsWithInvalidTopics.push(comment);
       return; // Skip to the next comment
     }
@@ -155,16 +145,16 @@ function isExtraComment(comment: Comment, inputCommentIds: string[]): boolean {
 /**
  * Checks if a comment has empty topics or subtopics.
  * @param comment The categorized comment to check.
- * @param topicDepth The user provided topics depth (1 or 2).
+ * @param includeSubtopics Whether to include subtopics in the categorization.
  * @returns True if the comment has empty topics or subtopics, false otherwise.
  */
-function hasEmptyTopicsOrSubtopics(comment: Comment, topicDepth: number): boolean {
-  if ((!comment.topics || comment.topics.length === 0) ||
-    (topicDepth === 2 && comment.topics.some(
-        (topic) => !topic.subtopics || topic.subtopics.length === 0)
-    )
-  ) {
-    console.warn(`Comment with empty topics or subtopics: ${JSON.stringify(comment)}`);
+function hasEmptyTopicsOrSubtopics(comment: Comment, includeSubtopics: boolean): boolean {
+  if (!comment.topics || comment.topics.length === 0) {
+    console.warn(`Comment with empty topics: ${JSON.stringify(comment)}`);
+    return true;
+  }
+  if (includeSubtopics && comment.topics.some(topic => !topic.subtopics || topic.subtopics.length === 0)) {
+    console.warn(`Comment with empty subtopics: ${JSON.stringify(comment)}`);
     return true;
   }
   return false;
@@ -173,28 +163,27 @@ function hasEmptyTopicsOrSubtopics(comment: Comment, topicDepth: number): boolea
 /**
  * Checks if a categorized comment has topic or subtopic names different from the provided ones to the LLM.
  * @param comment The categorized comment to check.
- * @param topicDepth The user provided topics depth (1 or 2).
+ * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param inputTopics The lookup table mapping the input topic names to arrays of their subtopic names.
  * @returns True if the comment has invalid topic or subtopic names, false otherwise.
  */
-function hasInvalidTopicNames(comment: Comment, topicDepth: number, inputTopics: Record<string, string[]>): boolean {
+function hasInvalidTopicNames(comment: Comment, includeSubtopics: boolean, inputTopics: Record<string, string[]>): boolean {
   // TODO: Currently comment.topics can be undefined, so we need this. Remove it once we have a new type that has topics required.
   const topicsToCheck = comment.topics || [];
 
   // We use `some` here to return as soon as we find an invalid topic (or subtopic).
   return topicsToCheck.some(topic => {
     if (topic.name === "Other") {
-      // If the topic is "Other", we don't need to check subtopics
-      return false;
+      return false; // "Other" topic can have any subtopic names - we can skip checking them.
     }
 
-    const isValidTopic = topic.name in inputTopics || topic.name === "Other";
+    const isValidTopic = topic.name in inputTopics;
     if (!isValidTopic) {
       console.warn(`Comment has an invalid topic: ${topic.name}, comment: ${JSON.stringify(comment)}`);
       return true; // Invalid topic found, stop checking and return `hasInvalidTopicNames` true for this comment.
     }
 
-    if (topicDepth === 2 && topic.subtopics) {
+    if (includeSubtopics && topic.subtopics) {
       const areAllSubtopicsValid = areSubtopicsValid(topic.subtopics, inputTopics[topic.name]);
       if (!areAllSubtopicsValid) {
         console.warn(`Comment has invalid subtopics under topic: ${topic.name}, comment: ${JSON.stringify(comment)}`);

@@ -56,8 +56,19 @@ const safetySettings = [
   },
 ];
 
-// Topic schema
-const topics_schema = {
+// RESPONSE SCHEMAS
+// For details see: https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
+const topicLearningSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+    },
+  },
+};
+
+const topicAndSubtopicLearningSchema = {
   type: "array",
   items: {
     type: "object",
@@ -76,9 +87,28 @@ const topics_schema = {
   },
 };
 
-// TODO: create a separate schema for 1-tier categorization
-// For details see: https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
-const categorizationSchemaCommentsFirst = {
+const topicCategorizationSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    required: ["id", "topics"],
+    properties: {
+      id: { type: "string" }, // Comment id
+      topics: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["name"],
+          properties: {
+            name: { type: "string" }, // Topic name
+          },
+        },
+      },
+    },
+  },
+};
+
+const topicAndSubtopicCategorizationSchema = {
   type: "array",
   items: {
     type: "object",
@@ -109,45 +139,45 @@ const categorizationSchemaCommentsFirst = {
   },
 };
 
-const baseModelSpec = {
-  model: model,
-  generationConfig: {
-    // Docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
-    maxOutputTokens: 8192,
-    temperature: 0,
-    topP: 0,
-  },
-  safetySettings: safetySettings,
-};
-
-const jsonModelSpec = {
-  model: model,
-  generationConfig: {
-    maxOutputTokens: 8192,
-    temperature: 0,
-    topP: 0,
-    response_mime_type: "application/json",
-    responseSchema: topics_schema,
-  },
-  safetySettings: safetySettings,
-};
-
-const jsonModelSpecForCategorization = {
-  model: model,
-  generationConfig: {
-    maxOutputTokens: 8192,
-    temperature: 0,
-    topP: 0,
-    response_mime_type: "application/json",
-    responseSchema: categorizationSchemaCommentsFirst,
-  },
-  safetySettings: safetySettings,
-};
+/**
+ * Creates a model specification object for Vertex AI generative models.
+ *
+ * @param responseSchema Optional. The JSON schema for the response. Only used if responseMimeType is 'application/json'.
+ * @returns A model specification object ready to be used with vertex_ai.getGenerativeModel().
+ */
+function getModelSpec(responseSchema?: any): any {
+  return {
+    model: model,
+    generationConfig: {
+      // Param docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
+      maxOutputTokens: 8192,
+      temperature: 0,
+      topP: 0,
+      ...(responseSchema && { // if no `responseSchema` is provided, the params below won't be set
+        response_mime_type: "application/json",
+        responseSchema
+      })
+    },
+    safetySettings: safetySettings,
+  };
+}
 
 // Instantiate the models
-const generativeModel = vertex_ai.getGenerativeModel(baseModelSpec);
-const generativeJsonModel = vertex_ai.getGenerativeModel(jsonModelSpec);
-const categorizationModel = vertex_ai.getGenerativeModel(jsonModelSpecForCategorization);
+const baseModel = vertex_ai.getGenerativeModel(
+  getModelSpec() // No responseSchema for the base model
+);
+const topicLearningModel = vertex_ai.getGenerativeModel(
+  getModelSpec(topicLearningSchema)
+);
+const topicAndSubtopicLearningModel = vertex_ai.getGenerativeModel(
+  getModelSpec(topicAndSubtopicLearningSchema)
+);
+const topicCategorizationModel = vertex_ai.getGenerativeModel(
+  getModelSpec(topicCategorizationSchema)
+);
+const topicAndSubtopicCategorizationModel = vertex_ai.getGenerativeModel(
+  getModelSpec(topicAndSubtopicCategorizationSchema)
+);
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000; // 2 seconds. TODO: figure out how to set it to zero for tests
@@ -182,7 +212,7 @@ export async function executeRequest(
   comments: string[]
 ): Promise<string> {
   const req = getRequest(instructions, comments);
-  const streamingResp = await generativeModel.generateContentStream(req);
+  const streamingResp = await baseModel.generateContentStream(req);
 
   const response = await streamingResp.response;
   if (response.candidates![0].content.parts[0].text) {
@@ -212,7 +242,8 @@ export async function generateJSON(instructions: string, comments: string[], mod
       streamingResp = await model.generateContentStream(req);
       break; // Exit loop if successful
     } catch (error: any) {
-      if (error.message.includes('429 Too Many Requests') && attempt < MAX_RETRIES) {
+      if ((error.message.includes('429 Too Many Requests') || error.message.includes('RESOURCE_EXHAUSTED'))
+        && attempt < MAX_RETRIES) {
         console.warn(`Rate limit error, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       } else {
@@ -300,22 +331,23 @@ function parseTopics(topics: string | undefined): string[] | undefined {
 /**
  * Extracts topics from the comments using a LLM on Vertex AI. Retries if the LLM response is invalid.
  * @param comments The comments data for topic modeling
- * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
+ * @param includeSubtopics Whether to include subtopics in the topic modeling
  * @param topics Optional. The user provided comma-separated string of top-level topics
  * @returns: The LLM's topic modeling.
  */
 export async function learnTopics(
   comments: Comment[],
-  topicDepth: number,
+  includeSubtopics: boolean,
   topics?: string
 ): Promise<string> {
   const parentTopics = parseTopics(topics);
-  const instructions = generateTopicModelingPrompt(topicDepth, parentTopics);
+  const instructions = generateTopicModelingPrompt(includeSubtopics, parentTopics);
   // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
   const commentTexts = comments.map(comment => '```' + comment.text + '```');
+  const model = !includeSubtopics ? topicLearningModel : topicAndSubtopicLearningModel;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const response = await generateJSON(instructions, commentTexts, generativeJsonModel);
+    const response = await generateJSON(instructions, commentTexts, model);
 
     if (learnedTopicsValid(response, parentTopics)) {
       return JSON.stringify(response, null, 2);
@@ -332,8 +364,8 @@ export async function learnTopics(
 /**
  * Categorize the comments by topics using a LLM on Vertex.
  * @param comments The data to summarize
- * @param topicDepth The user provided topics depth (1 or 2). TODO: replace with `includeSubtopics` boolean flag.
- * @param topics The user provided top-level topics in JSON format following the interface `Topic`.
+ * @param includeSubtopics Whether to include subtopics in the categorization.
+ * @param topics The user provided topics (and subtopic) in JSON format following the interface `Topic`.
  * @param instructions Optional. How the comments should be categorized.
  * @param groupByTopic Optional. Whether to group comments by topic in the output. Defaults to false.
  * @param batchSize Optional. The number of comments to send to the LLM in each batch. Defaults to 100.
@@ -341,25 +373,25 @@ export async function learnTopics(
  */
 export async function categorize(
   comments: Comment[],
-  topicDepth: number,
+  includeSubtopics: boolean,
   topics: string,
   instructions?: string,
   groupByTopic: boolean = false,
   batchSize = 100
 ): Promise<string> {
-  // Either use provided instructions or generate them based in the provided topics structure.
-  if (!instructions) {
-    instructions = generateCategorizationPrompt(topics, topicDepth);
-  }
-
   // Parse the topics JSON string into an array of Topic objects for easy access to topic names during validation.
   const topicsJson: Topic[] = parseTopicsJson(topics);
+
+  // Either use provided instructions or generate them based in the provided topics structure.
+  if (!instructions) {
+    instructions = generateCategorizationPrompt(topicsJson, includeSubtopics);
+  }
 
   // Call the model in batches, validate results and retry if needed.
   const categorized: Comment[] = [];
   for (let i = 0; i < comments.length; i += batchSize) {
     const uncategorizedBatch = comments.slice(i, i + batchSize);
-    const categorizedBatch = await categorizeWithRetry(instructions, uncategorizedBatch, topicDepth, topicsJson);
+    const categorizedBatch = await categorizeWithRetry(instructions, uncategorizedBatch, includeSubtopics, topicsJson);
     categorized.push(...categorizedBatch);
   }
 
@@ -370,11 +402,11 @@ export async function categorize(
  * Makes API call to generate JSON and retries with any comments that were not properly categorized.
  * @param instructions Instructions for the LLM on how to categorize the comments.
  * @param inputComments The comments to categorize.
- * @param topicDepth The user provided topics depth (1 or 2)
+ * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param topics The topics and subtopics provided to the LLM for categorization.
  * @returns The categorized comments.
  */
-export async function categorizeWithRetry(instructions: string, inputComments: Comment[], topicDepth: number, topics: Topic[]): Promise<Comment[]> {
+export async function categorizeWithRetry(instructions: string, inputComments: Comment[], includeSubtopics: boolean, topics: Topic[]): Promise<Comment[]> {
   // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
   let uncategorized: Comment[] = [...inputComments];
   const categorized: Comment[] = [];
@@ -388,7 +420,8 @@ export async function categorizeWithRetry(instructions: string, inputComments: C
       JSON.stringify({ id: comment.id, text: comment.text })
     );
     // call the model
-    const newCategorized: any[] = await generateJSON(instructions, uncategorizedCommentsForModel, categorizationModel);
+    const model = !includeSubtopics ? topicCategorizationModel : topicAndSubtopicCategorizationModel;
+    const newCategorized: any[] = await generateJSON(instructions, uncategorizedCommentsForModel, model);
     // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
     const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(newCategorized, inputCommentsLookup);
 
@@ -397,7 +430,7 @@ export async function categorizeWithRetry(instructions: string, inputComments: C
     const {
       commentsPassedValidation,
       commentsWithInvalidTopics
-    } = validateCategorizedComments(newCategorizedComments, inputComments, topicDepth, topics);
+    } = validateCategorizedComments(newCategorizedComments, inputComments, includeSubtopics, topics);
     categorized.push(...commentsPassedValidation);
     // Check for comments completely missing in the model's response
     const missingComments: Comment[] = findMissingComments(newCategorizedComments, uncategorized);
@@ -405,7 +438,8 @@ export async function categorizeWithRetry(instructions: string, inputComments: C
     uncategorized = [...missingComments, ...commentsWithInvalidTopics];
 
     if (uncategorized.length > 0) {
-      console.warn(`Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying...`);
+      console.warn(`Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
     }
   } while (uncategorized.length > 0);
 

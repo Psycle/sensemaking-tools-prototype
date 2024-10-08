@@ -116,7 +116,7 @@ describe("categorize", () => {
       { id: "2", text: "Comment 2" },
     ];
     const topics = '[{"name": "Topic 1"}]';
-    const topicDepth = 1;
+    const includeSubtopics = false;
     const batchSize = 1;
 
     const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
@@ -125,7 +125,7 @@ describe("categorize", () => {
     const batch2Response = `[{"id": "2", "text": "Comment 2", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
     mockSingleModelResponse(generateContentStreamMock, batch2Response);
 
-    const categorizedComments = await categorize(comments, topicDepth, topics, undefined, false, batchSize);
+    const categorizedComments = await categorize(comments, includeSubtopics, topics, undefined, false, batchSize);
 
     // Assert the mock was called twice (for two batches)
     expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
@@ -145,7 +145,7 @@ describe("categorize", () => {
       { id: "3", text: "Comment 3" },
     ];
     const topics = '[{"name": "Topic 1"}]';
-    const topicDepth = 1;
+    const includeSubtopics = false;
     const topicsJson: Topic[] = [{ name: "Topic 1", subtopics: [] }];
     const instructions = "Categorize the comments based on these topics: " + topics;
 
@@ -163,7 +163,7 @@ describe("categorize", () => {
     const responseRetriedComment = `[{"id": "3", "text": "Comment 3", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
     mockSingleModelResponse(generateContentStreamMock, responseRetriedComment);
 
-    const categorizedComments = await categorizeWithRetry(instructions, comments, topicDepth, topicsJson);
+    const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
 
     // Assert the mock was called 3 times (initial call and 2 retries)
     expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
@@ -215,7 +215,7 @@ describe("learnTopics", () => {
       { id: "2", text: "Comment about Parks" },
       { id: "3", text: "Another comment about Roads" },
     ];
-    const topicDepth = 2;
+    const includeSubtopics = true;
     const topics = 'Infrastructure, Environment';
 
     const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
@@ -275,7 +275,7 @@ describe("learnTopics", () => {
     ]`;
     mockSingleModelResponse(generateContentStreamMock, validResponse);
 
-    const categorizedComments = await learnTopics(comments, topicDepth, topics);
+    const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
     // Assert the mock was called 3 times (initial call and 2 retries)
     expect(generateContentStreamMock).toHaveBeenCalledTimes(3);

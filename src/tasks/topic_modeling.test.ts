@@ -20,24 +20,24 @@ import {
 } from './topic_modeling';
 
 describe('Topic Modeling Prompt Generator', () => {
-  it('should generate a prompt for learning top-level topics (depth 1)', () => {
-    const depth = 1;
-    const prompt = generateTopicModelingPrompt(depth);
+  it('should generate a prompt for learning top-level topics only (depth 1, no subtopics)', () => {
+    const includeSubtopics = false;
+    const prompt = generateTopicModelingPrompt(includeSubtopics);
     expect(prompt).toEqual(LEARN_TOPICS_PROMPT);
   });
 
-  it('should generate a prompt for learning subtopics with given parent topics (depth 2)', () => {
-    const depth = 2;
+  it('should generate a prompt for learning subtopics with given top-level topics (depth 2)', () => {
+    const includeSubtopics = true;
     const parentTopics = ['Economic Development', 'Housing', 'Infrastructure'];
     const expectedPrompt = learnSubtopicsPrompt(parentTopics);
 
-    const prompt = generateTopicModelingPrompt(depth, parentTopics);
+    const prompt = generateTopicModelingPrompt(includeSubtopics, parentTopics);
     expect(prompt).toEqual(expectedPrompt);
   });
 
-  it('should generate a prompt for learning topics and subtopics (depth 2 without parent topics)', () => {
-    const depth = 2;
-    const prompt = generateTopicModelingPrompt(depth);
+  it('should generate a prompt for learning topics and subtopics (depth 2, no given top-level topics)', () => {
+    const includeSubtopics = true;
+    const prompt = generateTopicModelingPrompt(includeSubtopics);
     expect(prompt).toEqual(LEARN_TOPICS_AND_SUBTOPICS_PROMPT);
   });
 });
