@@ -122,7 +122,7 @@ export function learnedTopicsValid(response: Topic[], parentTopics?: string[]): 
   for (const topic of response) {
     const subtopicNames = topic.subtopics ? topic.subtopics.map(subtopic => subtopic.name) : [];
     for (const subtopicName of subtopicNames) {
-      if (topicNames.includes(subtopicName)) {
+      if (topicNames.includes(subtopicName) && subtopicName !== 'Other') {
         console.warn(`Invalid response: Subtopic "${subtopicName}" has the same name as a main topic.`);
         return false;
       }

@@ -16,10 +16,12 @@ import {
   generateTopicModelingPrompt,
   LEARN_TOPICS_PROMPT,
   LEARN_TOPICS_AND_SUBTOPICS_PROMPT,
-  learnSubtopicsPrompt
+  learnSubtopicsPrompt,
+  learnedTopicsValid
 } from './topic_modeling';
+import { Topic } from '../types';
 
-describe('Topic Modeling Prompt Generator', () => {
+describe('generateTopicModelingPrompt', () => {
   it('should generate a prompt for learning top-level topics only (depth 1, no subtopics)', () => {
     const includeSubtopics = false;
     const prompt = generateTopicModelingPrompt(includeSubtopics);
@@ -39,5 +41,19 @@ describe('Topic Modeling Prompt Generator', () => {
     const includeSubtopics = true;
     const prompt = generateTopicModelingPrompt(includeSubtopics);
     expect(prompt).toEqual(LEARN_TOPICS_AND_SUBTOPICS_PROMPT);
+  });
+});
+
+describe('learnedTopicsValid', () => {
+  it('should allow "Other" subtopic to have the same name as "Other" topic', () => {
+    const topics: Topic[] = [
+      {
+        name: 'Other',
+        subtopics: [
+          { name: 'Other' },
+        ],
+      },
+    ];
+    expect(learnedTopicsValid(topics)).toBe(true);
   });
 });
