@@ -15,42 +15,24 @@
 import {
   categorize,
   categorizeWithRetry,
-  generateJSON,
-  getPrompt,
   formatCommentsWithVotes,
-  learnTopics
+  getPrompt,
+  learnTopics,
 } from "./vertex_lib";
-import { Comment, Topic } from "./types";
+import { Comment } from "./types";
+import * as model from "./models/model";
 
-// Mock the VertexAI module - this mock will be used when the module is imported within a test run.
-jest.mock("@google-cloud/vertexai", () => {
-  // Mock the model response. This mock needs to be set up to return response specific for each test.
-  const generateContentStreamMock = jest.fn();
-  return {
-    // Mock `generateContentStream` function within VertexAI module
-    VertexAI: jest.fn(() => ({
-      getGenerativeModel: jest.fn(() => ({
-        generateContentStream: generateContentStreamMock,
-      })),
-    })),
-    // Expose the mocked function, so we can get it within a test using `jest.requireMock`, and spy on its invocations.
-    generateContentStreamMock: generateContentStreamMock,
-    // Mock other imports from VertexAI module
-    HarmBlockThreshold: {},
-    HarmCategory: {},
-  };
-});
-
-function mockSingleModelResponse(generateContentStreamMock: jest.Mock, responseMock: string) {
-  generateContentStreamMock.mockImplementationOnce(() => Promise.resolve({ response: { candidates: [{ content: { parts: [{ text: responseMock }] } }] } }));
-}
-
-beforeEach(() => {
-  // Reset the mock before each test
-  jest.requireMock("@google-cloud/vertexai").generateContentStreamMock.mockClear();
-});
+let mockGenerateJSON: jest.SpyInstance;
 
 describe("VertexLibTest", () => {
+  beforeEach(() => {
+    mockGenerateJSON = jest.spyOn(model, "generateJSON");
+  });
+
+  afterEach(() => {
+    mockGenerateJSON.mockRestore();
+  });
+
   it("should create a prompt", () => {
     expect(getPrompt("Summarize this:", ["comment1", "comment2"])).toEqual(
       "Instructions:\n" +
@@ -60,6 +42,7 @@ describe("VertexLibTest", () => {
       "comment2"
     );
   });
+
   it("should format comments with vote tallies via formatCommentsWithVotes", () => {
     expect(
       formatCommentsWithVotes([
@@ -107,210 +90,282 @@ describe("VertexLibTest", () => {
   vote info per group: {"0":{"agreeCount":2,"disagreeCount":5,"passCount":3,"totalCount":10},"1":{"agreeCount":5,"disagreeCount":3,"passCount":2,"totalCount":10}}`,
     ]);
   });
-});
 
-describe("categorize", () => {
-  it("should batch comments correctly", async () => {
-    const comments: Comment[] = [
-      { id: "1", text: "Comment 1" },
-      { id: "2", text: "Comment 2" },
-    ];
-    const topics = '[{"name": "Topic 1"}]';
-    const includeSubtopics = false;
-    const batchSize = 1;
+  describe("CategorizeTest", () => {
+    it("should batch comments correctly", async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment 1" },
+        { id: "2", text: "Comment 2" },
+      ];
+      const topics = '[{"name": "Topic 1"}]';
+      const includeSubtopics = false;
+      const batchSize = 1;
+      mockGenerateJSON
+        .mockReturnValueOnce(
+          Promise.resolve([
+            {
+              id: "1",
+              text: "Comment 1",
+              topics: [{ name: "Topic 1", subtopics: [] }],
+            },
+          ])
+        )
+        .mockReturnValueOnce(
+          Promise.resolve([
+            {
+              id: "2",
+              text: "Comment 2",
+              topics: [{ name: "Topic 1", subtopics: [] }],
+            },
+          ])
+        );
 
-    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
-    const batch1Response = `[{"id": "1", "text": "Comment 1", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
-    mockSingleModelResponse(generateContentStreamMock, batch1Response);
-    const batch2Response = `[{"id": "2", "text": "Comment 2", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
-    mockSingleModelResponse(generateContentStreamMock, batch2Response);
+      const categorizedComments = await categorize(
+        comments,
+        includeSubtopics,
+        topics,
+        undefined,
+        false,
+        batchSize
+      );
 
-    const categorizedComments = await categorize(comments, includeSubtopics, topics, undefined, false, batchSize);
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
 
-    // Assert the mock was called twice (for two batches)
-    expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
-
-    // Assert that the categorized comments are correct
-    const expected = [
-      { id: "1", text: "Comment 1", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "2", text: "Comment 2", topics: [{ name: "Topic 1", subtopics: [] }] },
-    ];
-    expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));
-  });
-
-  it("should retry categorization with missing comments", async () => {
-    const comments: Comment[] = [
-      { id: "1", text: "Comment 1" },
-      { id: "2", text: "Comment 2" },
-      { id: "3", text: "Comment 3" },
-    ];
-    const topics = '[{"name": "Topic 1"}]';
-    const includeSubtopics = false;
-    const topicsJson: Topic[] = [{ name: "Topic 1", subtopics: [] }];
-    const instructions = "Categorize the comments based on these topics: " + topics;
-
-    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
-
-    // Mock the first response with two missing comments
-    const responseMissing2Comments = `[{"id": "1", "text": "Comment 1", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
-    mockSingleModelResponse(generateContentStreamMock, responseMissing2Comments);
-
-    // Mock the second response with one missing comment
-    const responseMissing1Comment = `[{"id": "2", "text": "Comment 2", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
-    mockSingleModelResponse(generateContentStreamMock, responseMissing1Comment);
-
-    // Mock the third response with all comments categorized correctly
-    const responseRetriedComment = `[{"id": "3", "text": "Comment 3", "topics": [{"name": "Topic 1", "subtopics": []}]}]`;
-    mockSingleModelResponse(generateContentStreamMock, responseRetriedComment);
-
-    const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
-
-    // Assert the mock was called 3 times (initial call and 2 retries)
-    expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
-
-    const expected = [
-      { id: "1", text: "Comment 1", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "2", text: "Comment 2", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "3", text: "Comment 3", topics: [{ name: "Topic 1", subtopics: [] }] },
-    ];
-    expect(categorizedComments).toEqual(expected);
-  });
-
-  it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
-    const comments: Comment[] = [
-      { id: "1", text: "Comment 1" },
-      { id: "2", text: "Comment 2" },
-      { id: "3", text: "Comment 3" },
-    ];
-    const topics = '[{"name": "Topic 1", "subtopics": []}]';
-    const instructions = "Categorize the comments based on these topics: " + topics;
-    const includeSubtopics = true;
-    const topicsJson: Topic[] = [{ name: "Topic 1", subtopics: [] }];
-
-    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
-
-    // Mock the model to always return an empty response - simulating categorization failure
-    const emptyResponse = `[]`;
-    mockSingleModelResponse(generateContentStreamMock, emptyResponse);
-    mockSingleModelResponse(generateContentStreamMock, emptyResponse);
-    mockSingleModelResponse(generateContentStreamMock, emptyResponse); // max retries = 3
-
-    const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
-
-    expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
-
-    const expected = [
-      { id: "1", text: "Comment 1", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
-      { id: "2", text: "Comment 2", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
-      { id: "3", text: "Comment 3", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
-    ];
-    expect(categorizedComments).toEqual(expected);
-  });
-});
-
-describe("generateJSON", () => {
-  it("should retry on rate limit error and return valid JSON", async () => {
-    const instructions = "Some instructions";
-    const comments = ["Comment 1", "Comment 2"];
-    const expectedJSON = { result: "success" };
-
-    // if we can pass the model mock directly to the function where it's being called (instead of relying on import),
-    // then we don't need to use something like `jest.requireMock("@google-cloud/vertexai").generativeJsonModelMock`
-    const generativeJsonModelMock = {
-      generateContentStream: jest.fn(),
-    };
-    const generateContentStreamMock = generativeJsonModelMock.generateContentStream;
-
-    // Mock the first call to throw a rate limit error
-    generateContentStreamMock.mockImplementationOnce(() => {
-      throw new Error("429 Too Many Requests");
+      // Assert that the categorized comments are correct
+      const expected = [
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+        {
+          id: "2",
+          text: "Comment 2",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+      ];
+      expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));
     });
 
-    // Mock the second call to return the expected JSON
-    mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedJSON));
+    it("should retry categorization with all missing comments", async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment 1" },
+        { id: "2", text: "Comment 2" },
+        { id: "3", text: "Comment 3" },
+      ];
+      const includeSubtopics = false;
+      const instructions =
+        "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+      const commentsWithTextAndTopics = [
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+        {
+          id: "2",
+          text: "Comment 2",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+        {
+          id: "3",
+          text: "Comment 3",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+      ];
 
-    const result = await generateJSON(instructions, comments, generativeJsonModelMock);
+      // The first response is incorrectly missing all comments, and then
+      // on retry the text is present.
+      mockGenerateJSON
+        .mockReturnValueOnce(
+          Promise.resolve([])
+        )
+        .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
-    // Assert that the mock was called twice (initial call + retry)
-    expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
+      const categorizedComments = await categorizeWithRetry(
+        instructions,
+        comments,
+        includeSubtopics,
+        [{ name: "Topic 1", subtopics: [] }]
+      );
 
-    // Assert that the result is the expected JSON
-    expect(result).toEqual(expectedJSON);
-  });
-});
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+    });
 
-describe("learnTopics", () => {
-  it("should retry topic modeling with invalid responses", async () => {
-    const comments: Comment[] = [
-      { id: "1", text: "Comment about Roads" },
-      { id: "2", text: "Comment about Parks" },
-      { id: "3", text: "Another comment about Roads" },
-    ];
-    const includeSubtopics = true;
-    const topics = 'Infrastructure, Environment';
+    it("should retry categorization with some missing comments", async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment 1" },
+        { id: "2", text: "Comment 2" },
+        { id: "3", text: "Comment 3" },
+      ];
+      const includeSubtopics = false;
+      const instructions =
+        "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+      const commentsWithTextAndTopics = [
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+        {
+          id: "2",
+          text: "Comment 2",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+        {
+          id: "3",
+          text: "Comment 3",
+          topics: [{ name: "Topic 1", subtopics: [] }],
+        },
+      ];
 
-    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
+      // The first mock response includes only one comment, and for the next
+      // response the two missing comments are returned. 
+      mockGenerateJSON
+        .mockReturnValueOnce(
+          Promise.resolve([commentsWithTextAndTopics[0]])
+        )
+        .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]]));
 
-    // Invalid: Subtopic "Environment" has the same name as a main topic
-    const invalidResponse1 = `[
-      {
-        "name": "Infrastructure",
-        "subtopics": [
-          { "name": "Roads" },
-          { "name": "Environment" }
-        ]
-      },
-      {
-        "name": "Environment",
-        "subtopics": [
-          { "name": "Parks" }
-        ]
-      }
-    ]`;
-    mockSingleModelResponse(generateContentStreamMock, invalidResponse1);
+      const categorizedComments = await categorizeWithRetry(
+        instructions,
+        comments,
+        includeSubtopics,
+        [{ name: "Topic 1", subtopics: [] }]
+      );
 
-    // Invalid: Top-level topic "Economy" in not in parentTopics and not "Other"
-    const invalidResponse2 = `[
-      {
-        "name": "Infrastructure",
-        "subtopics": [
-          { "name": "Roads" }
-        ]
-      },
-      {
-        "name": "Environment",
-        "subtopics": [
-          { "name": "Parks" }
-        ]
-      },
-      {
-        "name": "Economy",
-        "subtopics": []
-      }
-    ]`;
-    mockSingleModelResponse(generateContentStreamMock, invalidResponse2);
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+    });
 
-    const validResponse = `[
-      {
-        "name": "Infrastructure",
-        "subtopics": [
-          { "name": "Roads" }
-        ]
-      },
-      {
-        "name": "Environment",
-        "subtopics": [
-          { "name": "Parks" }
-        ]
-      }
-    ]`;
-    mockSingleModelResponse(generateContentStreamMock, validResponse);
+    it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment 1" },
+        { id: "2", text: "Comment 2" },
+        { id: "3", text: "Comment 3" },
+      ];
+      const topics = '[{"name": "Topic 1", "subtopics": []}]';
+      const instructions = "Categorize the comments based on these topics: " + topics;
+      const includeSubtopics = true;
+      const topicsJson = [{ name: "Topic 1", subtopics: [] }];
 
-    const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
+      // Mock the model to always return an empty response. This simulates a
+      // categorization failure.
+      mockGenerateJSON
+        .mockReturnValue(Promise.resolve([]));
 
-    // Assert the mock was called 3 times (initial call and 2 retries)
-    expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
+      const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
 
-    expect(categorizedComments).toEqual(JSON.stringify(JSON.parse(validResponse), null, 2));
-  });
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(3);
+
+      const expected = [
+        { id: "1", text: "Comment 1", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+        { id: "2", text: "Comment 2", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+        { id: "3", text: "Comment 3", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+      ];
+      expect(categorizedComments).toEqual(expected);
+    });
+  })
+
+  describe("TopicModelingTest", ()=>{
+    it("should retry topic modeling when the subtopic is the same as a main topic", async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment about Roads" },
+        { id: "2", text: "Comment about Parks" },
+        { id: "3", text: "Another comment about Roads" },
+      ];
+      const includeSubtopics = true;
+      const topics = "Infrastructure, Environment";
+
+      const validResponse = [
+        {
+          name: "Infrastructure",
+          subtopics: [{ name: "Roads" }],
+        },
+        {
+          name: "Environment",
+          subtopics: [{ name: "Parks" }],
+        },
+      ];
+
+      // Mock LLM call incorrectly returns a subtopic that matches and existing
+      // topic at first, and then on retry returns a correct categorization.
+      mockGenerateJSON
+        .mockReturnValueOnce(
+          Promise.resolve([
+            {
+              name: "Infrastructure",
+              subtopics: [{ name: "Roads" }, { name: "Environment" }],
+            },
+            {
+              name: "Environment",
+              subtopics: [{ name: "Parks" }],
+            },
+          ])
+        )
+        .mockReturnValueOnce(Promise.resolve(validResponse));
+
+      const categorizedComments = await learnTopics(
+        comments,
+        includeSubtopics,
+        topics
+      );
+
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
+    });
+
+    it("should retry topic modeling when a new topic is added", async () => {
+      const comments: Comment[] = [
+        { id: "1", text: "Comment about Roads" },
+        { id: "2", text: "Comment about Parks" },
+        { id: "3", text: "Another comment about Roads" },
+      ];
+      const includeSubtopics = true;
+      const topics = "Infrastructure, Environment";
+
+      const validResponse = [
+        {
+          name: "Infrastructure",
+          subtopics: [{ name: "Roads" }],
+        },
+        {
+          name: "Environment",
+          subtopics: [{ name: "Parks" }],
+        },
+      ];
+
+      // Mock LLM call returns an incorrectly added new topic at first, and then
+      // is correct on retry.
+      mockGenerateJSON
+        .mockReturnValueOnce(
+          Promise.resolve([
+            {
+              name: "Infrastructure",
+              subtopics: [{ name: "Roads" }],
+            },
+            {
+              name: "Environment",
+              subtopics: [{ name: "Parks" }],
+            },
+            {
+              name: "Economy",
+              subtopics: [],
+            },
+          ])
+        )
+        .mockReturnValueOnce(Promise.resolve(validResponse));
+
+      const categorizedComments = await learnTopics(
+        comments,
+        includeSubtopics,
+        topics
+      );
+
+      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
+    });
+  })
+
 });
