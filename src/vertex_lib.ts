@@ -19,11 +19,11 @@ import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_m
 import { Comment, Topic } from "./types";
 import {
   addMissingTextToCategorizedComments,
-  findMissingComments,
+  assignDefaultCategory,
   generateCategorizationPrompt,
   parseTopicsJson,
   groupCommentsByTopic,
-  validateCategorizedComments,
+  processCategorizedComments,
 } from "./tasks/categorization";
 
 // Initialize Vertex with your Cloud project and location
@@ -413,8 +413,7 @@ export async function categorizeWithRetry(instructions: string, inputComments: C
   // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
   const inputCommentsLookup = new Map<string, Comment>(inputComments.map(comment => [comment.id, comment]));
 
-  // Start a while loop running until all comments are properly categorized
-  do {
+  for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
     // convert JSON to string representation that will be sent to the model
     const uncategorizedCommentsForModel: string[] = uncategorized.map(comment =>
       JSON.stringify({ id: comment.id, text: comment.text })
@@ -425,23 +424,20 @@ export async function categorizeWithRetry(instructions: string, inputComments: C
     // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
     const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(newCategorized, inputCommentsLookup);
 
-    // PERFORM VALIDATION
-    // Check for comments that were never in the input, have no topics, or non-matching topic names.
-    const {
-      commentsPassedValidation,
-      commentsWithInvalidTopics
-    } = validateCategorizedComments(newCategorizedComments, inputComments, includeSubtopics, topics);
-    categorized.push(...commentsPassedValidation);
-    // Check for comments completely missing in the model's response
-    const missingComments: Comment[] = findMissingComments(newCategorizedComments, uncategorized);
-    // Reset uncategorized: combine all invalid comments for retry
-    uncategorized = [...missingComments, ...commentsWithInvalidTopics];
+    // perform validation, update categorized, reset uncategorized
+    uncategorized = processCategorizedComments(newCategorizedComments, inputComments, uncategorized, includeSubtopics, topics, categorized);
 
-    if (uncategorized.length > 0) {
+    if (uncategorized.length === 0) {
+      break; // All comments categorized successfully
+    }
+
+    if (attempts < MAX_RETRIES) {
       console.warn(`Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+    } else {
+      assignDefaultCategory(uncategorized, categorized);
     }
-  } while (uncategorized.length > 0);
+  }
 
   return categorized;
 }

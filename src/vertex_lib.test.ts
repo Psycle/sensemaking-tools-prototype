@@ -175,6 +175,37 @@ describe("categorize", () => {
     ];
     expect(categorizedComments).toEqual(expected);
   });
+
+  it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
+    const comments: Comment[] = [
+      { id: "1", text: "Comment 1" },
+      { id: "2", text: "Comment 2" },
+      { id: "3", text: "Comment 3" },
+    ];
+    const topics = '[{"name": "Topic 1", "subtopics": []}]';
+    const instructions = "Categorize the comments based on these topics: " + topics;
+    const includeSubtopics = true;
+    const topicsJson: Topic[] = [{ name: "Topic 1", subtopics: [] }];
+
+    const generateContentStreamMock = jest.requireMock("@google-cloud/vertexai").generateContentStreamMock;
+
+    // Mock the model to always return an empty response - simulating categorization failure
+    const emptyResponse = `[]`;
+    mockSingleModelResponse(generateContentStreamMock, emptyResponse);
+    mockSingleModelResponse(generateContentStreamMock, emptyResponse);
+    mockSingleModelResponse(generateContentStreamMock, emptyResponse); // max retries = 3
+
+    const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
+
+    expect(generateContentStreamMock).toHaveBeenCalledTimes(3);
+
+    const expected = [
+      { id: "1", text: "Comment 1", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+      { id: "2", text: "Comment 2", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+      { id: "3", text: "Comment 3", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+    ];
+    expect(categorizedComments).toEqual(expected);
+  });
 });
 
 describe("generateJSON", () => {
