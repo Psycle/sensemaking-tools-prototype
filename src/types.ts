@@ -22,7 +22,7 @@ export class VoteTally {
   disagreeCount: number;
   passCount?: number;
 
-  constructor(agreeCount: number, disagreeCount: number, passCount?: number){
+  constructor(agreeCount: number, disagreeCount: number, passCount?: number) {
     this.agreeCount = agreeCount;
     this.disagreeCount = disagreeCount;
     this.passCount = passCount;
@@ -47,13 +47,13 @@ export interface Comment {
  * A series of comments that were voted on.
  */
 export interface Conversation {
-    comments: Comment[];
+  comments: Comment[];
 }
 
 /**
  * What is being discussed.
  */
 export interface Topic {
-    name: string;
-    subtopics?: Topic[];
+  name: string;
+  subtopics?: Topic[];
 }

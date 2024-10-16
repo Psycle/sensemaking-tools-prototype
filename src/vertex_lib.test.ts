@@ -35,11 +35,7 @@ describe("VertexLibTest", () => {
 
   it("should create a prompt", () => {
     expect(getPrompt("Summarize this:", ["comment1", "comment2"])).toEqual(
-      "Instructions:\n" +
-      "Summarize this:\n" +
-      "Comments:\n" +
-      "comment1\n" +
-      "comment2"
+      "Instructions:\n" + "Summarize this:\n" + "Comments:\n" + "comment1\n" + "comment2"
     );
   });
 
@@ -154,8 +150,7 @@ describe("VertexLibTest", () => {
         { id: "3", text: "Comment 3" },
       ];
       const includeSubtopics = false;
-      const instructions =
-        "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+      const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
       const commentsWithTextAndTopics = [
         {
           id: "1",
@@ -177,9 +172,7 @@ describe("VertexLibTest", () => {
       // The first response is incorrectly missing all comments, and then
       // on retry the text is present.
       mockGenerateJSON
-        .mockReturnValueOnce(
-          Promise.resolve([])
-        )
+        .mockReturnValueOnce(Promise.resolve([]))
         .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
       const categorizedComments = await categorizeWithRetry(
@@ -200,8 +193,7 @@ describe("VertexLibTest", () => {
         { id: "3", text: "Comment 3" },
       ];
       const includeSubtopics = false;
-      const instructions =
-        "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+      const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
       const commentsWithTextAndTopics = [
         {
           id: "1",
@@ -221,12 +213,12 @@ describe("VertexLibTest", () => {
       ];
 
       // The first mock response includes only one comment, and for the next
-      // response the two missing comments are returned. 
+      // response the two missing comments are returned.
       mockGenerateJSON
+        .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[0]]))
         .mockReturnValueOnce(
-          Promise.resolve([commentsWithTextAndTopics[0]])
-        )
-        .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]]));
+          Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
+        );
 
       const categorizedComments = await categorizeWithRetry(
         instructions,
@@ -252,23 +244,39 @@ describe("VertexLibTest", () => {
 
       // Mock the model to always return an empty response. This simulates a
       // categorization failure.
-      mockGenerateJSON
-        .mockReturnValue(Promise.resolve([]));
+      mockGenerateJSON.mockReturnValue(Promise.resolve([]));
 
-      const categorizedComments = await categorizeWithRetry(instructions, comments, includeSubtopics, topicsJson);
+      const categorizedComments = await categorizeWithRetry(
+        instructions,
+        comments,
+        includeSubtopics,
+        topicsJson
+      );
 
       expect(mockGenerateJSON).toHaveBeenCalledTimes(3);
 
       const expected = [
-        { id: "1", text: "Comment 1", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
-        { id: "2", text: "Comment 2", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
-        { id: "3", text: "Comment 3", topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }] },
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+        },
+        {
+          id: "2",
+          text: "Comment 2",
+          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+        },
+        {
+          id: "3",
+          text: "Comment 3",
+          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+        },
       ];
       expect(categorizedComments).toEqual(expected);
     });
-  })
+  });
 
-  describe("TopicModelingTest", ()=>{
+  describe("TopicModelingTest", () => {
     it("should retry topic modeling when the subtopic is the same as a main topic", async () => {
       const comments: Comment[] = [
         { id: "1", text: "Comment about Roads" },
@@ -306,11 +314,7 @@ describe("VertexLibTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await learnTopics(
-        comments,
-        includeSubtopics,
-        topics
-      );
+      const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
       expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
@@ -357,15 +361,10 @@ describe("VertexLibTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await learnTopics(
-        comments,
-        includeSubtopics,
-        topics
-      );
+      const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
       expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
     });
-  })
-
+  });
 });

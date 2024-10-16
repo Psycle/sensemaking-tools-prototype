@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {VoteTally} from './types';
+import { VoteTally } from "./types";
 
 describe("Types Test", () => {
   it("The total votes should be the sum of all the different VoteTally values", () => {

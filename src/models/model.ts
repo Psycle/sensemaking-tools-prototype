@@ -143,10 +143,11 @@ function getModelSpec(responseSchema?: any): any {
       maxOutputTokens: 8192,
       temperature: 0,
       topP: 0,
-      ...(responseSchema && { // if no `responseSchema` is provided, the params below won't be set
+      ...(responseSchema && {
+        // if no `responseSchema` is provided, the params below won't be set
         response_mime_type: "application/json",
-        responseSchema
-      })
+        responseSchema,
+      }),
     },
     safetySettings: safetySettings,
   };
@@ -156,9 +157,7 @@ function getModelSpec(responseSchema?: any): any {
 const baseModel = vertex_ai.getGenerativeModel(
   getModelSpec() // No responseSchema for the base model
 );
-export const topicLearningModel = vertex_ai.getGenerativeModel(
-  getModelSpec(topicLearningSchema)
-);
+export const topicLearningModel = vertex_ai.getGenerativeModel(getModelSpec(topicLearningSchema));
 export const topicAndSubtopicLearningModel = vertex_ai.getGenerativeModel(
   getModelSpec(topicAndSubtopicLearningSchema)
 );
@@ -174,9 +173,7 @@ export const RETRY_DELAY_MS = 2000; // 2 seconds. TODO: figure out how to set it
 
 function getRequest(prompt: string) {
   return {
-    contents: [
-      { role: "user", parts: [{ text: prompt }] },
-    ],
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
   };
 }
 
@@ -184,9 +181,7 @@ function getRequest(prompt: string) {
  * Lower level protocol for sending a set of instructions to an llm with
  * comments (which could contain summary information).
  */
-export async function executeRequest(
- prompt: string
-): Promise<string> {
+export async function executeRequest(prompt: string): Promise<string> {
   const req = getRequest(prompt);
   const streamingResp = await baseModel.generateContentStream(req);
 
@@ -208,7 +203,7 @@ export async function executeRequest(
  * @returns A Promise that resolves with the LLM's output parsed as a JSON object.
  * @throws An error if the LLM's response is malformed or if there's an error during processing.
  */
-export async function generateJSON(prompt:string, model: any): Promise<any> {
+export async function generateJSON(prompt: string, model: any): Promise<any> {
   const req = getRequest(prompt);
   let streamingResp;
 
@@ -217,10 +212,15 @@ export async function generateJSON(prompt:string, model: any): Promise<any> {
       streamingResp = await model.generateContentStream(req);
       break; // Exit loop if successful
     } catch (error: any) {
-      if ((error.message.includes('429 Too Many Requests') || error.message.includes('RESOURCE_EXHAUSTED'))
-        && attempt < MAX_RETRIES) {
-        console.warn(`Rate limit error, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      if (
+        (error.message.includes("429 Too Many Requests") ||
+          error.message.includes("RESOURCE_EXHAUSTED")) &&
+        attempt < MAX_RETRIES
+      ) {
+        console.warn(
+          `Rate limit error, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       } else {
         console.error("Error during generateJSON:", error);
         throw error;

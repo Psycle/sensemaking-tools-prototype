@@ -23,7 +23,7 @@ import {
   topicAndSubtopicLearningModel,
   topicLearningModel,
   topicCategorizationModel,
-  topicAndSubtopicCategorizationModel
+  topicAndSubtopicCategorizationModel,
 } from "./models/model";
 import { Comment, Topic } from "./types";
 import {
@@ -45,9 +45,8 @@ export function getPrompt(instructions: string, data: string[]) {
   return `Instructions:
 ${instructions}
 Comments:
-${data.join('\n')}`;  // separate comments with newlines
+${data.join("\n")}`; // separate comments with newlines
 }
-
 
 /**
  * Summarizes the comments using a LLM on Vertex.
@@ -55,11 +54,8 @@ ${data.join('\n')}`;  // separate comments with newlines
  * @param comments: the data to summarize
  * @returns: the LLM's summarization.
  */
-export async function basicSummarize(
-  instructions: string,
-  comments: Comment[]
-): Promise<string> {
-  const commentTexts = comments.map(comment => comment.text);
+export async function basicSummarize(instructions: string, comments: Comment[]): Promise<string> {
+  const commentTexts = comments.map((comment) => comment.text);
   return await executeRequest(getPrompt(instructions, commentTexts));
 }
 
@@ -68,14 +64,10 @@ export async function basicSummarize(
  * @param commentData: the data to summarize, as an array of Comment objects
  * @returns: comments, together with vote tally information as JSON
  */
-export function formatCommentsWithVotes(
-  commentData: Comment[]
-): string[] {
+export function formatCommentsWithVotes(commentData: Comment[]): string[] {
   return commentData.map(
     (comment: Comment) =>
-      comment.text +
-      "\n  vote info per group: " +
-      JSON.stringify(comment.voteTalliesByGroup)
+      comment.text + "\n  vote info per group: " + JSON.stringify(comment.voteTalliesByGroup)
   );
 }
 
@@ -89,9 +81,7 @@ export async function voteTallySummarize(
   instructions: string,
   commentData: Comment[]
 ): Promise<string> {
-  return await executeRequest(
-    getPrompt(instructions, formatCommentsWithVotes(commentData))
-  );
+  return await executeRequest(getPrompt(instructions, formatCommentsWithVotes(commentData)));
 }
 
 /**
@@ -122,7 +112,7 @@ export async function learnTopics(
   const parentTopics = parseTopics(topics);
   const instructions = generateTopicModelingPrompt(includeSubtopics, parentTopics);
   // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
-  const commentTexts = comments.map(comment => '```' + comment.text + '```');
+  const commentTexts = comments.map((comment) => "```" + comment.text + "```");
   const model = !includeSubtopics ? topicLearningModel : topicAndSubtopicLearningModel;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -130,10 +120,11 @@ export async function learnTopics(
 
     if (learnedTopicsValid(response, parentTopics)) {
       return JSON.stringify(response, null, 2);
-
     } else {
-      console.warn(`Learned topics failed validation, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      console.warn(
+        `Learned topics failed validation, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
     }
   }
 
@@ -170,7 +161,12 @@ export async function categorize(
   const categorized: Comment[] = [];
   for (let i = 0; i < comments.length; i += batchSize) {
     const uncategorizedBatch = comments.slice(i, i + batchSize);
-    const categorizedBatch = await categorizeWithRetry(instructions, uncategorizedBatch, includeSubtopics, topicsJson);
+    const categorizedBatch = await categorizeWithRetry(
+      instructions,
+      uncategorizedBatch,
+      includeSubtopics,
+      topicsJson
+    );
     categorized.push(...categorizedBatch);
   }
 
@@ -185,34 +181,58 @@ export async function categorize(
  * @param topics The topics and subtopics provided to the LLM for categorization.
  * @returns The categorized comments.
  */
-export async function categorizeWithRetry(instructions: string, inputComments: Comment[], includeSubtopics: boolean, topics: Topic[]): Promise<Comment[]> {
+export async function categorizeWithRetry(
+  instructions: string,
+  inputComments: Comment[],
+  includeSubtopics: boolean,
+  topics: Topic[]
+): Promise<Comment[]> {
   // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
   let uncategorized: Comment[] = [...inputComments];
   const categorized: Comment[] = [];
   // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
-  const inputCommentsLookup = new Map<string, Comment>(inputComments.map(comment => [comment.id, comment]));
+  const inputCommentsLookup = new Map<string, Comment>(
+    inputComments.map((comment) => [comment.id, comment])
+  );
 
   for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
     // convert JSON to string representation that will be sent to the model
-    const uncategorizedCommentsForModel: string[] = uncategorized.map(comment =>
+    const uncategorizedCommentsForModel: string[] = uncategorized.map((comment) =>
       JSON.stringify({ id: comment.id, text: comment.text })
     );
     // call the model
-    const model = !includeSubtopics ? topicCategorizationModel : topicAndSubtopicCategorizationModel;
-    const newCategorized: any[] = await generateJSON(getPrompt(instructions, uncategorizedCommentsForModel), model);
+    const model = !includeSubtopics
+      ? topicCategorizationModel
+      : topicAndSubtopicCategorizationModel;
+    const newCategorized: any[] = await generateJSON(
+      getPrompt(instructions, uncategorizedCommentsForModel),
+      model
+    );
     // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
-    const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(newCategorized, inputCommentsLookup);
+    const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(
+      newCategorized,
+      inputCommentsLookup
+    );
 
     // perform validation, update categorized, reset uncategorized
-    uncategorized = processCategorizedComments(newCategorizedComments, inputComments, uncategorized, includeSubtopics, topics, categorized);
+    uncategorized = processCategorizedComments(
+      newCategorizedComments,
+      inputComments,
+      uncategorized,
+      includeSubtopics,
+      topics,
+      categorized
+    );
 
     if (uncategorized.length === 0) {
       break; // All comments categorized successfully
     }
 
     if (attempts < MAX_RETRIES) {
-      console.warn(`Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      console.warn(
+        `Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
     } else {
       assignDefaultCategory(uncategorized, categorized);
     }

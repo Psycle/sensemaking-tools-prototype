@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Comment, Topic} from "../types";
+import { Comment, Topic } from "../types";
 
 /**
  * @fileoverview Helper functions for performing comments categorization.
@@ -61,7 +61,9 @@ Important Considerations:
  * @returns The generated prompt string, including instructions, output format, and considerations for categorization.
  */
 export function generateCategorizationPrompt(topics: Topic[], includeSubtopics: boolean): string {
-  return includeSubtopics ? subtopicCategorizationPrompt(topics) : topicCategorizationPrompt(topics);
+  return includeSubtopics
+    ? subtopicCategorizationPrompt(topics)
+    : topicCategorizationPrompt(topics);
 }
 
 /**
@@ -82,11 +84,14 @@ export function validateCategorizedComments(
   inputComments: Comment[],
   includeSubtopics: boolean,
   topics: Topic[]
-): { commentsPassedValidation: Comment[], commentsWithInvalidTopics: Comment[] } {
+): {
+  commentsPassedValidation: Comment[];
+  commentsWithInvalidTopics: Comment[];
+} {
   const commentsPassedValidation: Comment[] = [];
   const commentsWithInvalidTopics: Comment[] = [];
   // put all input comment ids together for output ids validation
-  const inputCommentIds: string[] = inputComments.map(comment => comment.id);
+  const inputCommentIds: string[] = inputComments.map((comment) => comment.id);
   // topic -> subtopics lookup for naming validation
   const topicLookup: Record<string, string[]> = createTopicLookup(topics);
 
@@ -123,7 +128,7 @@ export function validateCategorizedComments(
 function createTopicLookup(inputTopics: Topic[]): Record<string, string[]> {
   const lookup: Record<string, string[]> = {};
   for (const topic of inputTopics) {
-    lookup[topic.name] = topic.subtopics ? topic.subtopics.map(subtopic => subtopic.name) : [];
+    lookup[topic.name] = topic.subtopics ? topic.subtopics.map((subtopic) => subtopic.name) : [];
   }
   return lookup;
 }
@@ -153,7 +158,10 @@ function hasEmptyTopicsOrSubtopics(comment: Comment, includeSubtopics: boolean):
     console.warn(`Comment with empty topics: ${JSON.stringify(comment)}`);
     return true;
   }
-  if (includeSubtopics && comment.topics.some(topic => !topic.subtopics || topic.subtopics.length === 0)) {
+  if (
+    includeSubtopics &&
+    comment.topics.some((topic) => !topic.subtopics || topic.subtopics.length === 0)
+  ) {
     console.warn(`Comment with empty subtopics: ${JSON.stringify(comment)}`);
     return true;
   }
@@ -167,26 +175,34 @@ function hasEmptyTopicsOrSubtopics(comment: Comment, includeSubtopics: boolean):
  * @param inputTopics The lookup table mapping the input topic names to arrays of their subtopic names.
  * @returns True if the comment has invalid topic or subtopic names, false otherwise.
  */
-function hasInvalidTopicNames(comment: Comment, includeSubtopics: boolean, inputTopics: Record<string, string[]>): boolean {
+function hasInvalidTopicNames(
+  comment: Comment,
+  includeSubtopics: boolean,
+  inputTopics: Record<string, string[]>
+): boolean {
   // TODO: Currently comment.topics can be undefined, so we need this. Remove it once we have a new type that has topics required.
   const topicsToCheck = comment.topics || [];
 
   // We use `some` here to return as soon as we find an invalid topic (or subtopic).
-  return topicsToCheck.some(topic => {
+  return topicsToCheck.some((topic) => {
     if (topic.name === "Other") {
       return false; // "Other" topic can have any subtopic names - we can skip checking them.
     }
 
     const isValidTopic = topic.name in inputTopics;
     if (!isValidTopic) {
-      console.warn(`Comment has an invalid topic: ${topic.name}, comment: ${JSON.stringify(comment)}`);
+      console.warn(
+        `Comment has an invalid topic: ${topic.name}, comment: ${JSON.stringify(comment)}`
+      );
       return true; // Invalid topic found, stop checking and return `hasInvalidTopicNames` true for this comment.
     }
 
     if (includeSubtopics && topic.subtopics) {
       const areAllSubtopicsValid = areSubtopicsValid(topic.subtopics, inputTopics[topic.name]);
       if (!areAllSubtopicsValid) {
-        console.warn(`Comment has invalid subtopics under topic: ${topic.name}, comment: ${JSON.stringify(comment)}`);
+        console.warn(
+          `Comment has invalid subtopics under topic: ${topic.name}, comment: ${JSON.stringify(comment)}`
+        );
         return true; // Invalid subtopics found, stop checking and return `hasInvalidTopicNames` true for this comment.
       }
     }
@@ -204,9 +220,12 @@ function hasInvalidTopicNames(comment: Comment, includeSubtopics: boolean, input
  * @param inputSubtopics An array of input subtopic names.
  * @returns True if all subtopics are valid, false otherwise.
  */
-function areSubtopicsValid(subtopicsToCheck: { name: string }[], inputSubtopics: string[]): boolean {
-  return subtopicsToCheck.every(subtopic =>
-    inputSubtopics.includes(subtopic.name) || subtopic.name === "Other"
+function areSubtopicsValid(
+  subtopicsToCheck: { name: string }[],
+  inputSubtopics: string[]
+): boolean {
+  return subtopicsToCheck.every(
+    (subtopic) => inputSubtopics.includes(subtopic.name) || subtopic.name === "Other"
   );
 }
 
@@ -216,7 +235,10 @@ function areSubtopicsValid(subtopicsToCheck: { name: string }[], inputSubtopics:
  * @param uncategorized The current set of uncategorized comments to check if any are missing in the model response.
  * @returns An array of comments that were present in the input, but not in categorized.
  */
-export function findMissingComments(categorizedComments: Comment[], uncategorized: Comment[]): Comment[] {
+export function findMissingComments(
+  categorizedComments: Comment[],
+  uncategorized: Comment[]
+): Comment[] {
   const categorizedCommentIds: string[] = categorizedComments.map((comment) => comment.id);
   const missingComments = uncategorized.filter(
     (uncategorizedComment) => !categorizedCommentIds.includes(uncategorizedComment.id)
@@ -236,7 +258,10 @@ export function findMissingComments(categorizedComments: Comment[], uncategorize
  * @param inputCommentsLookup A map to look up the original input comments by their ID.
  * @returns An array of Comment objects with the 'text' property added.
  */
-export function addMissingTextToCategorizedComments(categorizedComments: any[], inputCommentsLookup: Map<string, Comment>): Comment[] {
+export function addMissingTextToCategorizedComments(
+  categorizedComments: any[],
+  inputCommentsLookup: Map<string, Comment>
+): Comment[] {
   categorizedComments.forEach((categorizedComment: any) => {
     const inputComment = inputCommentsLookup.get(categorizedComment.id);
     if (inputComment) {
@@ -260,7 +285,9 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
   try {
     return JSON.parse(topicsJsonString);
   } catch (error) {
-    throw new Error("Invalid topics JSON string. Please provide a valid JSON array of Topic objects.");
+    throw new Error(
+      "Invalid topics JSON string. Please provide a valid JSON array of Topic objects."
+    );
   }
 }
 
@@ -281,18 +308,22 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
  * }
  */
 export function groupCommentsByTopic(categorized: Comment[]): string {
-  const commentsByTopics: { [topicName: string]: { [subtopicName: string]: { [commentId: string]: string } } } = {};
+  const commentsByTopics: {
+    [topicName: string]: {
+      [subtopicName: string]: { [commentId: string]: string };
+    };
+  } = {};
   for (const comment of categorized) {
     if (!comment.topics || comment.topics.length === 0) {
       throw new Error(`Comment with ID ${comment.id} has no topics assigned.`);
     }
     for (const topic of comment.topics) {
       if (!commentsByTopics[topic.name]) {
-        commentsByTopics[topic.name] = {};  // init new topic name
+        commentsByTopics[topic.name] = {}; // init new topic name
       }
       for (const subtopic of topic.subtopics || []) {
         if (!commentsByTopics[topic.name][subtopic.name]) {
-          commentsByTopics[topic.name][subtopic.name] = {};  // init new subtopic name
+          commentsByTopics[topic.name][subtopic.name] = {}; // init new subtopic name
         }
         commentsByTopics[topic.name][subtopic.name][comment.id] = comment.text;
       }
@@ -321,10 +352,12 @@ export function processCategorizedComments(
   categorized: Comment[]
 ): Comment[] {
   // Check for comments that were never in the input, have no topics, or non-matching topic names.
-  const {
-    commentsPassedValidation,
-    commentsWithInvalidTopics
-  } = validateCategorizedComments(newCategorizedComments, inputComments, includeSubtopics, topics);
+  const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
+    newCategorizedComments,
+    inputComments,
+    includeSubtopics,
+    topics
+  );
   categorized.push(...commentsPassedValidation);
   // Check for comments completely missing in the model's response
   const missingComments: Comment[] = findMissingComments(newCategorizedComments, uncategorized);
@@ -339,13 +372,17 @@ export function processCategorizedComments(
  * @param categorized The array of successfully categorized comments.
  */
 export function assignDefaultCategory(uncategorized: Comment[], categorized: Comment[]) {
-  console.warn(`Failed to categorize ${uncategorized.length} comments after maximum number of retries. Assigning "Other" topic and "Uncategorized" subtopic to failed comments.`);
+  console.warn(
+    `Failed to categorize ${uncategorized.length} comments after maximum number of retries. Assigning "Other" topic and "Uncategorized" subtopic to failed comments.`
+  );
   console.warn("Uncategorized comments:", JSON.stringify(uncategorized));
-  uncategorized.forEach(comment => {
-    comment.topics = [{
-      name: "Other",
-      subtopics: [{ name: "Uncategorized" }]
-    }];
+  uncategorized.forEach((comment) => {
+    comment.topics = [
+      {
+        name: "Other",
+        subtopics: [{ name: "Uncategorized" }],
+      },
+    ];
     categorized.push(comment);
   });
 }

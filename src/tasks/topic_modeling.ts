@@ -89,7 +89,6 @@ export function generateTopicModelingPrompt(
   includeSubtopics: boolean,
   parentTopics?: string[]
 ): string {
-
   if (!includeSubtopics) {
     return LEARN_TOPICS_PROMPT;
   } else if (parentTopics?.length) {
@@ -107,23 +106,28 @@ export function generateTopicModelingPrompt(
  * @returns True if the response is valid, false otherwise.
  */
 export function learnedTopicsValid(response: Topic[], parentTopics?: string[]): boolean {
-  const topicNames = response.map(topic => topic.name);
+  const topicNames = response.map((topic) => topic.name);
 
   // 1. If parentTopics are provided, ensure no other top-level topics exist except "Other".
   if (parentTopics) {
-    const allowedTopicNames = [...parentTopics, 'Other'];
-    if (!topicNames.every(name => allowedTopicNames.includes(name))) {
-      console.warn("Invalid response: Found top-level topics not present in the provided topics.", topicNames);
+    const allowedTopicNames = [...parentTopics, "Other"];
+    if (!topicNames.every((name) => allowedTopicNames.includes(name))) {
+      console.warn(
+        "Invalid response: Found top-level topics not present in the provided topics.",
+        topicNames
+      );
       return false;
     }
   }
 
   // 2. Ensure no subtopic has the same name as any main topic.
   for (const topic of response) {
-    const subtopicNames = topic.subtopics ? topic.subtopics.map(subtopic => subtopic.name) : [];
+    const subtopicNames = topic.subtopics ? topic.subtopics.map((subtopic) => subtopic.name) : [];
     for (const subtopicName of subtopicNames) {
-      if (topicNames.includes(subtopicName) && subtopicName !== 'Other') {
-        console.warn(`Invalid response: Subtopic "${subtopicName}" has the same name as a main topic.`);
+      if (topicNames.includes(subtopicName) && subtopicName !== "Other") {
+        console.warn(
+          `Invalid response: Subtopic "${subtopicName}" has the same name as a main topic.`
+        );
         return false;
       }
     }

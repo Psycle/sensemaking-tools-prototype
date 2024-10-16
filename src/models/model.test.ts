@@ -34,7 +34,13 @@ jest.mock("@google-cloud/vertexai", () => {
 });
 
 function mockSingleModelResponse(generateContentStreamMock: jest.Mock, responseMock: string) {
-  generateContentStreamMock.mockImplementationOnce(() => Promise.resolve({ response: { candidates: [{ content: { parts: [{ text: responseMock }] } }] } }));
+  generateContentStreamMock.mockImplementationOnce(() =>
+    Promise.resolve({
+      response: {
+        candidates: [{ content: { parts: [{ text: responseMock }] } }],
+      },
+    })
+  );
 }
 
 describe("ModelTest", () => {
