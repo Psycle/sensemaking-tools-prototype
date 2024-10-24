@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { generateJSON } from "./model";
+import { generateCommentsWithModel, generateJSON, generateTopicsWithModel } from "./model";
+import { GenerativeModel } from "@google-cloud/vertexai";
+import { Comment, Topic } from "../types";
 
 // Mock the VertexAI module - this mock will be used when the module is imported within a test run.
 jest.mock("@google-cloud/vertexai", () => {
@@ -44,21 +46,21 @@ function mockSingleModelResponse(generateContentStreamMock: jest.Mock, responseM
 }
 
 describe("ModelTest", () => {
+  // if we can pass the model mock directly to the function where it's being called (instead of relying on import),
+  // then we don't need to use something like `jest.requireMock("@google-cloud/vertexai").generativeJsonModelMock`
+  const generativeJsonModelMock = {
+    generateContentStream: jest.fn(),
+  };
+  const generateContentStreamMock = generativeJsonModelMock.generateContentStream;
+
   beforeEach(() => {
     // Reset the mock before each test
-    jest.requireMock("@google-cloud/vertexai").generateContentStreamMock.mockClear();
+    generateContentStreamMock.mockClear();
   });
 
-  describe("generateJSON", () => {
+  describe("generateContent", () => {
     it("should retry on rate limit error and return valid JSON", async () => {
-      const expectedJSON = { result: "success" };
-
-      // if we can pass the model mock directly to the function where it's being called (instead of relying on import),
-      // then we don't need to use something like `jest.requireMock("@google-cloud/vertexai").generativeJsonModelMock`
-      const generativeJsonModelMock = {
-        generateContentStream: jest.fn(),
-      };
-      const generateContentStreamMock = generativeJsonModelMock.generateContentStream;
+      const expectedJSON = [{ result: "success" }];
 
       // Mock the first call to throw a rate limit error
       generateContentStreamMock.mockImplementationOnce(() => {
@@ -68,13 +70,47 @@ describe("ModelTest", () => {
       // Mock the second call to return the expected JSON
       mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedJSON));
 
-      const result = await generateJSON("Some instructions", generativeJsonModelMock);
+      const result = await generateJSON(
+        "Some instructions",
+        generativeJsonModelMock as unknown as GenerativeModel
+      );
 
       // Assert that the mock was called twice (initial call + retry)
       expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
 
       // Assert that the result is the expected JSON
       expect(result).toEqual(expectedJSON);
+    });
+
+    it("should generate valid topics", async () => {
+      const expectedTopics: Topic[] = [{ name: "Topic 1" }, { name: "Topic 2" }];
+      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedTopics));
+
+      const result = await generateTopicsWithModel(
+        "Some instructions",
+        generativeJsonModelMock as unknown as GenerativeModel
+      );
+
+      expect(generateContentStreamMock).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual(expectedTopics);
+    });
+
+    it("should generate valid comments", async () => {
+      const expectedComments: Comment[] = [
+        { id: "1", text: "hi", topics: [{ name: "Topic 1" }] },
+        { id: "1", text: "hi", topics: [{ name: "Topic 1" }] },
+      ];
+      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedComments));
+
+      const result = await generateCommentsWithModel(
+        "Some instructions",
+        generativeJsonModelMock as unknown as GenerativeModel
+      );
+
+      expect(generateContentStreamMock).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual(expectedComments);
     });
   });
 });

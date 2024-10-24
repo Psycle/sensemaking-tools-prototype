@@ -17,13 +17,10 @@
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import {
   executeRequest,
-  generateJSON,
   MAX_RETRIES,
   RETRY_DELAY_MS,
-  topicAndSubtopicLearningModel,
-  topicLearningModel,
-  topicCategorizationModel,
-  topicAndSubtopicCategorizationModel,
+  generateTopics,
+  generateComments,
 } from "./models/model";
 import { Comment, Topic } from "./types";
 import {
@@ -113,10 +110,8 @@ export async function learnTopics(
   const instructions = generateTopicModelingPrompt(includeSubtopics, parentTopics);
   // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
   const commentTexts = comments.map((comment) => "```" + comment.text + "```");
-  const model = !includeSubtopics ? topicLearningModel : topicAndSubtopicLearningModel;
-
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const response = await generateJSON(getPrompt(instructions, commentTexts), model);
+    const response = await generateTopics(getPrompt(instructions, commentTexts), includeSubtopics);
 
     if (learnedTopicsValid(response, parentTopics)) {
       return JSON.stringify(response, null, 2);
@@ -200,13 +195,10 @@ export async function categorizeWithRetry(
     const uncategorizedCommentsForModel: string[] = uncategorized.map((comment) =>
       JSON.stringify({ id: comment.id, text: comment.text })
     );
-    // call the model
-    const model = !includeSubtopics
-      ? topicCategorizationModel
-      : topicAndSubtopicCategorizationModel;
-    const newCategorized: any[] = await generateJSON(
+
+    const newCategorized: Comment[] = await generateComments(
       getPrompt(instructions, uncategorizedCommentsForModel),
-      model
+      includeSubtopics
     );
     // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
     const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(

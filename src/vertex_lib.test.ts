@@ -22,15 +22,18 @@ import {
 import { Comment } from "./types";
 import * as model from "./models/model";
 
-let mockGenerateJSON: jest.SpyInstance;
+let mockGenerateTopics: jest.SpyInstance;
+let mockGenerateComments: jest.SpyInstance;
 
 describe("VertexLibTest", () => {
   beforeEach(() => {
-    mockGenerateJSON = jest.spyOn(model, "generateJSON");
+    mockGenerateTopics = jest.spyOn(model, "generateTopics");
+    mockGenerateComments = jest.spyOn(model, "generateComments");
   });
 
   afterEach(() => {
-    mockGenerateJSON.mockRestore();
+    mockGenerateTopics.mockRestore();
+    mockGenerateComments.mockRestore();
   });
 
   it("should create a prompt", () => {
@@ -96,13 +99,13 @@ describe("VertexLibTest", () => {
       const topics = '[{"name": "Topic 1"}]';
       const includeSubtopics = false;
       const batchSize = 1;
-      mockGenerateJSON
+      mockGenerateComments
         .mockReturnValueOnce(
           Promise.resolve([
             {
               id: "1",
               text: "Comment 1",
-              topics: [{ name: "Topic 1", subtopics: [] }],
+              topics: [{ name: "Topic 1"}],
             },
           ])
         )
@@ -111,7 +114,7 @@ describe("VertexLibTest", () => {
             {
               id: "2",
               text: "Comment 2",
-              topics: [{ name: "Topic 1", subtopics: [] }],
+              topics: [{ name: "Topic 1" }],
             },
           ])
         );
@@ -125,19 +128,19 @@ describe("VertexLibTest", () => {
         batchSize
       );
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
 
       // Assert that the categorized comments are correct
       const expected = [
         {
           id: "1",
           text: "Comment 1",
-          topics: [{ name: "Topic 1", subtopics: [] }],
+          topics: [{ name: "Topic 1"}],
         },
         {
           id: "2",
           text: "Comment 2",
-          topics: [{ name: "Topic 1", subtopics: [] }],
+          topics: [{ name: "Topic 1"}],
         },
       ];
       expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));
@@ -171,7 +174,7 @@ describe("VertexLibTest", () => {
 
       // The first response is incorrectly missing all comments, and then
       // on retry the text is present.
-      mockGenerateJSON
+      mockGenerateComments
         .mockReturnValueOnce(Promise.resolve([]))
         .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
@@ -182,7 +185,7 @@ describe("VertexLibTest", () => {
         [{ name: "Topic 1", subtopics: [] }]
       );
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(commentsWithTextAndTopics);
     });
 
@@ -214,7 +217,7 @@ describe("VertexLibTest", () => {
 
       // The first mock response includes only one comment, and for the next
       // response the two missing comments are returned.
-      mockGenerateJSON
+      mockGenerateComments
         .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[0]]))
         .mockReturnValueOnce(
           Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
@@ -227,7 +230,7 @@ describe("VertexLibTest", () => {
         [{ name: "Topic 1", subtopics: [] }]
       );
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(commentsWithTextAndTopics);
     });
 
@@ -244,7 +247,7 @@ describe("VertexLibTest", () => {
 
       // Mock the model to always return an empty response. This simulates a
       // categorization failure.
-      mockGenerateJSON.mockReturnValue(Promise.resolve([]));
+      mockGenerateComments.mockReturnValue(Promise.resolve([]));
 
       const categorizedComments = await categorizeWithRetry(
         instructions,
@@ -253,7 +256,7 @@ describe("VertexLibTest", () => {
         topicsJson
       );
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(3);
+      expect(mockGenerateComments).toHaveBeenCalledTimes(3);
 
       const expected = [
         {
@@ -299,7 +302,7 @@ describe("VertexLibTest", () => {
 
       // Mock LLM call incorrectly returns a subtopic that matches and existing
       // topic at first, and then on retry returns a correct categorization.
-      mockGenerateJSON
+      mockGenerateTopics
         .mockReturnValueOnce(
           Promise.resolve([
             {
@@ -316,7 +319,7 @@ describe("VertexLibTest", () => {
 
       const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
     });
 
@@ -342,7 +345,7 @@ describe("VertexLibTest", () => {
 
       // Mock LLM call returns an incorrectly added new topic at first, and then
       // is correct on retry.
-      mockGenerateJSON
+      mockGenerateTopics
         .mockReturnValueOnce(
           Promise.resolve([
             {
@@ -363,7 +366,7 @@ describe("VertexLibTest", () => {
 
       const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
-      expect(mockGenerateJSON).toHaveBeenCalledTimes(2);
+      expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
     });
   });

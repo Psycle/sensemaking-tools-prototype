@@ -14,7 +14,13 @@
 
 // Module to interact with LLMs.
 
-import { HarmBlockThreshold, HarmCategory, VertexAI } from "@google-cloud/vertexai";
+import {
+  GenerativeModel,
+  HarmBlockThreshold,
+  HarmCategory,
+  VertexAI,
+} from "@google-cloud/vertexai";
+import { Topic, Comment, isCommentType, isTopicType } from "../types";
 
 // Initialize Vertex with your Cloud project and location
 const vertex_ai = new VertexAI({
@@ -157,18 +163,20 @@ function getModelSpec(responseSchema?: any): any {
 const baseModel = vertex_ai.getGenerativeModel(
   getModelSpec() // No responseSchema for the base model
 );
-export const topicLearningModel = vertex_ai.getGenerativeModel(getModelSpec(topicLearningSchema));
-export const topicAndSubtopicLearningModel = vertex_ai.getGenerativeModel(
+const topicLearningModel = vertex_ai.getGenerativeModel(getModelSpec(topicLearningSchema));
+const topicAndSubtopicLearningModel = vertex_ai.getGenerativeModel(
   getModelSpec(topicAndSubtopicLearningSchema)
 );
-export const topicCategorizationModel = vertex_ai.getGenerativeModel(
+const topicCategorizationModel = vertex_ai.getGenerativeModel(
   getModelSpec(topicCategorizationSchema)
 );
-export const topicAndSubtopicCategorizationModel = vertex_ai.getGenerativeModel(
+const topicAndSubtopicCategorizationModel = vertex_ai.getGenerativeModel(
   getModelSpec(topicAndSubtopicCategorizationSchema)
 );
 
+// The maximum number of times an API call should be retried.
 export const MAX_RETRIES = 3;
+// How long in miliseconds to wait between API calls.
 export const RETRY_DELAY_MS = 2000; // 2 seconds. TODO: figure out how to set it to zero for tests
 
 function getRequest(prompt: string) {
@@ -195,15 +203,83 @@ export async function executeRequest(prompt: string): Promise<string> {
 }
 
 /**
+ * Generates topics and optionally subtopics based on a prompt.
+ * @param prompt includes both model instructions and comments to find topics for.
+ * @param includeSubtopics when true both Topics and Subtopics will be found.
+ * @returns a list of topics that are present in the input.
+ */
+export async function generateTopics(prompt: string, includeSubtopics: boolean): Promise<Topic[]> {
+  const model = includeSubtopics ? topicAndSubtopicLearningModel : topicLearningModel;
+  return generateTopicsWithModel(prompt, model);
+}
+
+/**
+ *  Categorizes the comments based on the given Topics.
+ * @param prompt includes both model instructions and comments to categorize.
+ * @param includeSubtopics when true both Topics and Subtopics will be found.
+ * @returns a list of Comments which all contain at least one associated Topic.
+ */
+export async function generateComments(
+  prompt: string,
+  includeSubtopics: boolean
+): Promise<Comment[]> {
+  const model = includeSubtopics ? topicAndSubtopicCategorizationModel : topicCategorizationModel;
+  return generateCommentsWithModel(prompt, model);
+}
+
+/**
+ * Helper function for tests. Categorizes the comments based on the given Topics.
+ * @param prompt includes both model instructions and comments to categorize.
+ * @param model what model to call for generation.
+ * @returns a list of Comments which all contain at least one associated Topic.
+ */
+// TODO: Restrict access to this function. It is intended to only be available for testing. It can
+// be made "protected" once it is a class method.
+export async function generateCommentsWithModel(
+  prompt: string,
+  model: GenerativeModel
+): Promise<Comment[]> {
+  const response = await generateJSON(prompt, model);
+  if (!response.every((comment: Comment) => isCommentType(comment))) {
+    // TODO: Add retry logic for this error.
+    throw new Error("Model response comments are not all valid, response: " + response);
+  }
+  return response;
+}
+
+/**
+ * Helper function for tests. Generates topics and optionally subtopics based on a prompt.
+ * @param prompt includes both model instructions and comments to find topics for.
+ * @param model what model to call for generation.
+ * @returns a list of topics that are present in the input.
+ */
+// TODO: Restrict access to this function. It is intended to only be available for testing. It can
+// be made "protected" once it is a class method.
+export async function generateTopicsWithModel(
+  prompt: string,
+  model: GenerativeModel
+): Promise<Topic[]> {
+  const response = await generateJSON(prompt, model);
+  if (!response.every((topic: Topic) => isTopicType(topic))) {
+    // TODO: Add retry logic for this error.
+    throw new Error("Model response topics are not all valid, response: " + response);
+  }
+  return response;
+}
+
+/**
  * Utility function for sending a set of instructions to an LLM with comments,
- * and returning the results as JSON. It includes retry logic to handle rate limit errors.
+ * and returning the results as an array of JSON. It includes retry logic to handle rate limit
+ * errors.
  *
  * @param instructions The instructions for the LLM on how to process the comments.
  * @param prompt The instructions for the LLM on how to process the comments.
  * @returns A Promise that resolves with the LLM's output parsed as a JSON object.
  * @throws An error if the LLM's response is malformed or if there's an error during processing.
  */
-export async function generateJSON(prompt: string, model: any): Promise<any> {
+// TODO: Restrict access to this function. It is intended to only be available for testing. It can
+// be made "protected" once it is a class method.
+export async function generateJSON(prompt: string, model: GenerativeModel): Promise<any[]> {
   const req = getRequest(prompt);
   let streamingResp;
 
@@ -237,6 +313,9 @@ export async function generateJSON(prompt: string, model: any): Promise<any> {
   if (response.candidates![0].content.parts[0].text) {
     const responseText = response.candidates![0].content.parts[0].text;
     const generatedJSON = JSON.parse(responseText);
+    if (!Array.isArray(generatedJSON)) {
+      throw new Error("Model response is not a list: " + response);
+    }
     return generatedJSON;
   } else {
     console.warn("Malformed response: ", response);
