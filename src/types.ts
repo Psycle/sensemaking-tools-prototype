@@ -34,6 +34,27 @@ export class VoteTally {
 }
 
 /**
+ * Checks if the data is a VoteTally object.
+ *
+ * It has the side effect of changing the type of the object to VoteTally if applicable.
+ *
+ * @param data - the object to check
+ * @returns - true if the object is a VoteTally
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+export function isVoteTallyType(data: any): data is VoteTally {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "agreeCount" in data &&
+    typeof data.agreeCount === "number" &&
+    "disagreeCount" in data &&
+    typeof data.disagreeCount === "number" &&
+    (!("passCount" in data) || typeof data.passCount === "number")
+  );
+}
+
+/**
  * A text that was voted on by different groups.
  */
 export interface Comment {
@@ -41,6 +62,38 @@ export interface Comment {
   text: string;
   voteTalliesByGroup?: { [key: string]: VoteTally };
   topics?: Topic[];
+}
+
+/**
+ * Checks if the data is a Comment object.
+ *
+ * It has the side effect of changing the type of the object to Comment if applicable.
+ *
+ * @param data - the object to check
+ * @returns - true if the object is a Comment
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+export function isCommentType(data: any): data is Comment {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "id" in data &&
+    typeof data.id === "string" &&
+    "text" in data &&
+    typeof data.text === "string" &&
+    // Check that if voteTalliesByGroup dictionary exists all the keys are strings and values
+    // are VoteTally objects.
+    (!("voteTalliesByGroup" in data) ||
+      (Object.keys(data.voteTalliesByGroup).every(
+        (groupName: string) => typeof groupName === "string"
+      ) &&
+        Array.isArray(Object.values(data.voteTalliesByGroup)) &&
+        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+        Object.values(data.voteTalliesByGroup).every((voteTally: any) =>
+          isVoteTallyType(voteTally)
+        ))) &&
+    (!("topics" in data) || data.topics.every((topic: Topic) => isTopicType(topic)))
+  );
 }
 
 /**
@@ -56,4 +109,24 @@ export interface Conversation {
 export interface Topic {
   name: string;
   subtopics?: Topic[];
+}
+
+/**
+ * Checks if the data is a Topic object.
+ *
+ * It has the side effect of changing the type of the object to Topic if applicable.
+ *
+ * @param data - the object to check
+ * @returns - true if the object is a Topic
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+export function isTopicType(data: any): data is Topic {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "name" in data &&
+    typeof data.name === "string" &&
+    // Check that if subtopics exist they are all valid topics.
+    (!("subtopics" in data) || data.subtopics.every((subtopic: Topic) => isTopicType(subtopic)))
+  );
 }
