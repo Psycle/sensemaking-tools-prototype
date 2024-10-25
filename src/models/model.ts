@@ -18,7 +18,10 @@ import {
   GenerativeModel,
   HarmBlockThreshold,
   HarmCategory,
+  ModelParams,
   VertexAI,
+  Schema,
+  SchemaType,
 } from "@google-cloud/vertexai";
 import { Topic, Comment, isCommentType, isTopicType } from "../types";
 
@@ -54,28 +57,28 @@ const safetySettings = [
 
 // RESPONSE SCHEMAS
 // For details see: https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
-const topicLearningSchema = {
-  type: "array",
+const topicLearningSchema: Schema = {
+  type: SchemaType.ARRAY,
   items: {
-    type: "object",
+    type: SchemaType.OBJECT,
     properties: {
-      name: { type: "string" },
+      name: { type: SchemaType.STRING },
     },
   },
 };
 
-const topicAndSubtopicLearningSchema = {
-  type: "array",
+const topicAndSubtopicLearningSchema: Schema = {
+  type: SchemaType.ARRAY,
   items: {
-    type: "object",
+    type: SchemaType.OBJECT,
     properties: {
-      name: { type: "string" },
+      name: { type: SchemaType.STRING },
       subtopics: {
-        type: "array",
+        type: SchemaType.ARRAY,
         items: {
-          type: "object",
+          type: SchemaType.OBJECT,
           properties: {
-            name: { type: "string" },
+            name: { type: SchemaType.STRING },
           },
         },
       },
@@ -83,20 +86,20 @@ const topicAndSubtopicLearningSchema = {
   },
 };
 
-const topicCategorizationSchema = {
-  type: "array",
+const topicCategorizationSchema: Schema = {
+  type: SchemaType.ARRAY,
   items: {
-    type: "object",
+    type: SchemaType.OBJECT,
     required: ["id", "topics"],
     properties: {
-      id: { type: "string" }, // Comment id
+      id: { type: SchemaType.STRING }, // Comment id
       topics: {
-        type: "array",
+        type: SchemaType.ARRAY,
         items: {
-          type: "object",
+          type: SchemaType.OBJECT,
           required: ["name"],
           properties: {
-            name: { type: "string" }, // Topic name
+            name: { type: SchemaType.STRING }, // Topic name
           },
         },
       },
@@ -104,27 +107,27 @@ const topicCategorizationSchema = {
   },
 };
 
-const topicAndSubtopicCategorizationSchema = {
-  type: "array",
+const topicAndSubtopicCategorizationSchema: Schema = {
+  type: SchemaType.ARRAY,
   items: {
-    type: "object",
+    type: SchemaType.OBJECT,
     required: ["id", "topics"],
     properties: {
-      id: { type: "string" }, // Comment id
+      id: { type: SchemaType.STRING }, // Comment id
       topics: {
-        type: "array",
+        type: SchemaType.ARRAY,
         items: {
-          type: "object",
+          type: SchemaType.OBJECT,
           required: ["name", "subtopics"],
           properties: {
-            name: { type: "string" }, // Topic name
+            name: { type: SchemaType.STRING }, // Topic name
             subtopics: {
-              type: "array",
+              type: SchemaType.ARRAY,
               items: {
-                type: "object",
+                type: SchemaType.OBJECT,
                 required: ["name"],
                 properties: {
-                  name: { type: "string" }, // Subtopic name
+                  name: { type: SchemaType.STRING }, // Subtopic name
                 },
               },
             },
@@ -138,10 +141,10 @@ const topicAndSubtopicCategorizationSchema = {
 /**
  * Creates a model specification object for Vertex AI generative models.
  *
- * @param responseSchema Optional. The JSON schema for the response. Only used if responseMimeType is 'application/json'.
+ * @param schema Optional. The JSON schema for the response. Only used if responseMimeType is 'application/json'.
  * @returns A model specification object ready to be used with vertex_ai.getGenerativeModel().
  */
-function getModelSpec(responseSchema?: any): any {
+function getModelSpec(schema?: Schema): ModelParams {
   return {
     model: model,
     generationConfig: {
@@ -149,10 +152,10 @@ function getModelSpec(responseSchema?: any): any {
       maxOutputTokens: 8192,
       temperature: 0,
       topP: 0,
-      ...(responseSchema && {
-        // if no `responseSchema` is provided, the params below won't be set
+      ...(schema && {
+        // if no `schema` is provided, the params below won't be set
         response_mime_type: "application/json",
-        responseSchema,
+        schema,
       }),
     },
     safetySettings: safetySettings,
@@ -161,7 +164,7 @@ function getModelSpec(responseSchema?: any): any {
 
 // Instantiate the models
 const baseModel = vertex_ai.getGenerativeModel(
-  getModelSpec() // No responseSchema for the base model
+  getModelSpec() // No schema for the base model
 );
 const topicLearningModel = vertex_ai.getGenerativeModel(getModelSpec(topicLearningSchema));
 const topicAndSubtopicLearningModel = vertex_ai.getGenerativeModel(
@@ -279,6 +282,7 @@ export async function generateTopicsWithModel(
  */
 // TODO: Restrict access to this function. It is intended to only be available for testing. It can
 // be made "protected" once it is a class method.
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
 export async function generateJSON(prompt: string, model: GenerativeModel): Promise<any[]> {
   const req = getRequest(prompt);
   let streamingResp;
@@ -287,8 +291,9 @@ export async function generateJSON(prompt: string, model: GenerativeModel): Prom
     try {
       streamingResp = await model.generateContentStream(req);
       break; // Exit loop if successful
-    } catch (error: any) {
+    } catch (error) {
       if (
+        error instanceof Error &&
         (error.message.includes("429 Too Many Requests") ||
           error.message.includes("RESOURCE_EXHAUSTED")) &&
         attempt < MAX_RETRIES

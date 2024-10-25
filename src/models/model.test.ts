@@ -32,6 +32,7 @@ jest.mock("@google-cloud/vertexai", () => {
     // Mock other imports from VertexAI module
     HarmBlockThreshold: {},
     HarmCategory: {},
+    SchemaType: { ARRAY: 0, OBJECT: 1, STRING: 2 },
   };
 });
 
