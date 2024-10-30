@@ -14,9 +14,13 @@
 
 // Module to interact with sensemaking tools.
 
+// TODO: remove this once the library more closely matches the library specification doc. The
+// unused variables should be gone once the library is more fully implemented.
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS, VertexModel } from "./models/vertex_model";
-import { Comment, Topic } from "./types";
+import { Comment, SummarizationType, Topic, VoteTally } from "./types";
 import {
   addMissingTextToCategorizedComments,
   assignDefaultCategory,
@@ -25,6 +29,8 @@ import {
   groupCommentsByTopic,
   processCategorizedComments,
 } from "./tasks/categorization";
+import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
+import { getPrompt } from "./sensemaker_utils";
 
 // TODO: this should be initialized outside of the library. Remove this once this library can be
 // initialized as a class.
@@ -35,54 +41,26 @@ const GEMINI_MODEL = new VertexModel(
 );
 
 /**
- * Combines the data and instructions into a prompt to send to Vertex.
- * @param instructions: what the model should do.
- * @param data: the data that the model should consider.
- * @returns the instructions and the data as a text
+ * Summarize a set of comments using all available metadata.
+ * @param comments the text and (optional) vote data to consider
+ * @param summarizationType what summarization method to use
+ * @param topics the set of topics that should be present in the final summary
+ * @param additionalInstructions additional context to give the model as part of the prompt
+ * @returns a summary of the information as a string.
  */
-export function getPrompt(instructions: string, data: string[]) {
-  return `Instructions:
-${instructions}
-Comments:
-${data.join("\n")}`; // separate comments with newlines
-}
-
-/**
- * Summarizes the comments using a LLM on Vertex.
- * @param instructions: how the comments should be summarized.
- * @param comments: the data to summarize
- * @returns: the LLM's summarization.
- */
-export async function basicSummarize(instructions: string, comments: Comment[]): Promise<string> {
-  const commentTexts = comments.map((comment) => comment.text);
-  return await GEMINI_MODEL.executeRequest(getPrompt(instructions, commentTexts));
-}
-
-/**
- * Utility function for formatting the comments together with vote tally data
- * @param commentData: the data to summarize, as an array of Comment objects
- * @returns: comments, together with vote tally information as JSON
- */
-export function formatCommentsWithVotes(commentData: Comment[]): string[] {
-  return commentData.map(
-    (comment: Comment) =>
-      comment.text + "\n  vote info per group: " + JSON.stringify(comment.voteTalliesByGroup)
-  );
-}
-
-/**
- * Summarizes the comments using a LLM on Vertex.
- * @param instructions: how the comments should be summarized.
- * @param commentData: the data to summarize, as an array of Comment objects
- * @returns: the LLM's summarization.
- */
-export async function voteTallySummarize(
-  instructions: string,
-  commentData: Comment[]
+export function summarize(
+  comments: Comment[],
+  summarizationType: SummarizationType = SummarizationType.VOTE_TALLY,
+  topics?: Topic[],
+  additionalInstructions?: string
 ): Promise<string> {
-  return await GEMINI_MODEL.executeRequest(
-    getPrompt(instructions, formatCommentsWithVotes(commentData))
-  );
+  if (summarizationType == SummarizationType.BASIC) {
+    return basicSummarize(comments, GEMINI_MODEL);
+  } else if (summarizationType == SummarizationType.VOTE_TALLY) {
+    return voteTallySummarize(comments, GEMINI_MODEL);
+  } else {
+    throw TypeError("Unknown Summarization Type.");
+  }
 }
 
 /**

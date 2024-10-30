@@ -15,6 +15,14 @@
 // A module to define the types used in this library.
 
 /**
+ * Describes the type of summarization to use.
+ */
+export enum SummarizationType {
+  BASIC,
+  VOTE_TALLY,
+}
+
+/**
  * Aggregates a number of individual votes.
  */
 export class VoteTally {
