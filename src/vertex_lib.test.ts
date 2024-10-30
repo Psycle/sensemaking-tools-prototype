@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,15 +20,16 @@ import {
   learnTopics,
 } from "./vertex_lib";
 import { Comment } from "./types";
-import * as model from "./models/model";
+import { VertexModel } from "./models/vertex_model";
 
-let mockGenerateTopics: jest.SpyInstance;
+// Mock the model response. This mock needs to be set up to return response specific for each test.
 let mockGenerateComments: jest.SpyInstance;
+let mockGenerateTopics: jest.SpyInstance;
 
 describe("VertexLibTest", () => {
   beforeEach(() => {
-    mockGenerateTopics = jest.spyOn(model, "generateTopics");
-    mockGenerateComments = jest.spyOn(model, "generateComments");
+    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateComments");
+    mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
   });
 
   afterEach(() => {
@@ -105,7 +106,7 @@ describe("VertexLibTest", () => {
             {
               id: "1",
               text: "Comment 1",
-              topics: [{ name: "Topic 1"}],
+              topics: [{ name: "Topic 1" }],
             },
           ])
         )
@@ -135,12 +136,12 @@ describe("VertexLibTest", () => {
         {
           id: "1",
           text: "Comment 1",
-          topics: [{ name: "Topic 1"}],
+          topics: [{ name: "Topic 1" }],
         },
         {
           id: "2",
           text: "Comment 2",
-          topics: [{ name: "Topic 1"}],
+          topics: [{ name: "Topic 1" }],
         },
       ];
       expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));

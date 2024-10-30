@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,7 @@
 // Module to interact with sensemaking tools.
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
-import {
-  executeRequest,
-  MAX_RETRIES,
-  RETRY_DELAY_MS,
-  generateTopics,
-  generateComments,
-} from "./models/model";
+import { MAX_RETRIES, RETRY_DELAY_MS, VertexModel } from "./models/vertex_model";
 import { Comment, Topic } from "./types";
 import {
   addMissingTextToCategorizedComments,
@@ -31,6 +25,14 @@ import {
   groupCommentsByTopic,
   processCategorizedComments,
 } from "./tasks/categorization";
+
+// TODO: this should be initialized outside of the library. Remove this once this library can be
+// initialized as a class.
+const GEMINI_MODEL = new VertexModel(
+  "conversation-ai-experiments",
+  "us-central1",
+  "gemini-1.5-pro-002"
+);
 
 /**
  * Combines the data and instructions into a prompt to send to Vertex.
@@ -53,7 +55,7 @@ ${data.join("\n")}`; // separate comments with newlines
  */
 export async function basicSummarize(instructions: string, comments: Comment[]): Promise<string> {
   const commentTexts = comments.map((comment) => comment.text);
-  return await executeRequest(getPrompt(instructions, commentTexts));
+  return await GEMINI_MODEL.executeRequest(getPrompt(instructions, commentTexts));
 }
 
 /**
@@ -78,7 +80,9 @@ export async function voteTallySummarize(
   instructions: string,
   commentData: Comment[]
 ): Promise<string> {
-  return await executeRequest(getPrompt(instructions, formatCommentsWithVotes(commentData)));
+  return await GEMINI_MODEL.executeRequest(
+    getPrompt(instructions, formatCommentsWithVotes(commentData))
+  );
 }
 
 /**
@@ -111,7 +115,10 @@ export async function learnTopics(
   // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
   const commentTexts = comments.map((comment) => "```" + comment.text + "```");
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const response = await generateTopics(getPrompt(instructions, commentTexts), includeSubtopics);
+    const response = await GEMINI_MODEL.generateTopics(
+      getPrompt(instructions, commentTexts),
+      includeSubtopics
+    );
 
     if (learnedTopicsValid(response, parentTopics)) {
       return JSON.stringify(response, null, 2);
@@ -196,7 +203,7 @@ export async function categorizeWithRetry(
       JSON.stringify({ id: comment.id, text: comment.text })
     );
 
-    const newCategorized: Comment[] = await generateComments(
+    const newCategorized: Comment[] = await GEMINI_MODEL.generateComments(
       getPrompt(instructions, uncategorizedCommentsForModel),
       includeSubtopics
     );
