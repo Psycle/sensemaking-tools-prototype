@@ -18,7 +18,7 @@ import {
   formatCommentsWithVotes,
   getPrompt,
   learnTopics,
-} from "./vertex_lib";
+} from "./sensemaker";
 import { Comment } from "./types";
 import { VertexModel } from "./models/vertex_model";
 
