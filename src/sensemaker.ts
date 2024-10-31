@@ -20,12 +20,8 @@
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS, VertexModel } from "./models/vertex_model";
-import { Comment, SummarizationType, Topic, VoteTally } from "./types";
-import {
-  categorizeWithRetry,
-  generateCategorizationPrompt,
-  groupCommentsByTopic,
-} from "./tasks/categorization";
+import { Comment, SummarizationType, Topic } from "./types";
+import { categorizeWithRetry, generateCategorizationPrompt } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
 import { getPrompt } from "./sensemaker_utils";
 
@@ -104,22 +100,17 @@ export async function learnTopics(
  * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param topics The user provided topics (and optionally subtopics).
  * @param additionalInstructions Optional. Context to add to the LLM prompt.
- * @param groupByTopic Optional. Whether to group comments by topic in the output. Defaults to false.
  * @returns: The LLM's categorization.
  */
 export async function categorizeComments(
   comments: Comment[],
   includeSubtopics: boolean,
   topics?: Topic[],
-  additionalInstructions?: string,
-  groupByTopic: boolean = false
-): Promise<string> {
+  additionalInstructions?: string
+): Promise<Comment[]> {
   if (!topics) {
     topics = await learnTopics(comments, includeSubtopics, undefined, additionalInstructions);
   }
-  const givenTopicsContainSubtopics = topics.some((topic: Topic) => {
-    return topic.subtopics !== undefined && topic.subtopics.length > 0;
-  });
 
   const instructions = generateCategorizationPrompt(topics, includeSubtopics);
 
@@ -137,5 +128,7 @@ export async function categorizeComments(
     categorized.push(...categorizedBatch);
   }
 
-  return groupByTopic ? groupCommentsByTopic(categorized) : JSON.stringify(categorized, null, 2);
+  // TODO: reconsider this format and if there's a desire to alternatively return this information
+  // grouped by Topic instead of grouped by Comment.
+  return categorized;
 }

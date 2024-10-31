@@ -361,6 +361,8 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
   }
 }
 
+// TODO: Reconsider how this feature should be used, it is currently unused, but there has been
+// desire in the past to group by Topics instead of Comments (like to assist with deduplication).
 /**
  * Groups categorized comments by topic and subtopic.
  *

@@ -63,8 +63,7 @@ describe("SensemakerTest", () => {
         comments,
         includeSubtopics,
         topics,
-        undefined,
-        false
+        undefined
       );
 
       expect(mockGenerateComments).toHaveBeenCalledTimes(2);
@@ -82,7 +81,7 @@ describe("SensemakerTest", () => {
           topics: [{ name: "Topic 1" }],
         },
       ];
-      expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));
+      expect(categorizedComments).toEqual(expected);
     });
   });
 
