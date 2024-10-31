@@ -22,12 +22,9 @@ import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_m
 import { MAX_RETRIES, RETRY_DELAY_MS, VertexModel } from "./models/vertex_model";
 import { Comment, SummarizationType, Topic, VoteTally } from "./types";
 import {
-  addMissingTextToCategorizedComments,
-  assignDefaultCategory,
+  categorizeWithRetry,
   generateCategorizationPrompt,
-  parseTopicsJson,
   groupCommentsByTopic,
-  processCategorizedComments,
 } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
 import { getPrompt } from "./sensemaker_utils";
@@ -39,6 +36,12 @@ const GEMINI_MODEL = new VertexModel(
   "us-central1",
   "gemini-1.5-pro-002"
 );
+
+class NotImplementedError extends Error {
+  constructor() {
+    super("Not implemented");
+  }
+}
 
 /**
  * Summarize a set of comments using all available metadata.
@@ -115,105 +118,41 @@ export async function learnTopics(
  * Categorize the comments by topics using a LLM on Vertex.
  * @param comments The data to summarize
  * @param includeSubtopics Whether to include subtopics in the categorization.
- * @param topics The user provided topics (and subtopic) in JSON format following the interface `Topic`.
- * @param instructions Optional. How the comments should be categorized.
+ * @param topics The user provided topics (and optionally subtopics).
+ * @param additionalInstructions Optional. Context to add to the LLM prompt.
  * @param groupByTopic Optional. Whether to group comments by topic in the output. Defaults to false.
- * @param batchSize Optional. The number of comments to send to the LLM in each batch. Defaults to 100.
  * @returns: The LLM's categorization.
  */
-export async function categorize(
+export async function categorizeComments(
   comments: Comment[],
   includeSubtopics: boolean,
-  topics: string,
-  instructions?: string,
-  groupByTopic: boolean = false,
-  batchSize = 100
+  topics?: Topic[],
+  additionalInstructions?: string,
+  groupByTopic: boolean = false
 ): Promise<string> {
-  // Parse the topics JSON string into an array of Topic objects for easy access to topic names during validation.
-  const topicsJson: Topic[] = parseTopicsJson(topics);
-
-  // Either use provided instructions or generate them based in the provided topics structure.
-  if (!instructions) {
-    instructions = generateCategorizationPrompt(topicsJson, includeSubtopics);
+  if (!topics) {
+    // TODO: should call learnTopics here but the return type isn't right.
+    throw new NotImplementedError();
   }
+  const givenTopicsContainSubtopics = topics.some((topic: Topic) => {
+    return topic.subtopics !== undefined && topic.subtopics.length > 0;
+  });
+
+  const instructions = generateCategorizationPrompt(topics, includeSubtopics);
 
   // Call the model in batches, validate results and retry if needed.
   const categorized: Comment[] = [];
-  for (let i = 0; i < comments.length; i += batchSize) {
-    const uncategorizedBatch = comments.slice(i, i + batchSize);
+  for (let i = 0; i < comments.length; i += GEMINI_MODEL.categorizationBatchSize) {
+    const uncategorizedBatch = comments.slice(i, i + GEMINI_MODEL.categorizationBatchSize);
     const categorizedBatch = await categorizeWithRetry(
+      GEMINI_MODEL,
       instructions,
       uncategorizedBatch,
       includeSubtopics,
-      topicsJson
+      topics
     );
     categorized.push(...categorizedBatch);
   }
 
   return groupByTopic ? groupCommentsByTopic(categorized) : JSON.stringify(categorized, null, 2);
-}
-
-/**
- * Makes API call to generate JSON and retries with any comments that were not properly categorized.
- * @param instructions Instructions for the LLM on how to categorize the comments.
- * @param inputComments The comments to categorize.
- * @param includeSubtopics Whether to include subtopics in the categorization.
- * @param topics The topics and subtopics provided to the LLM for categorization.
- * @returns The categorized comments.
- */
-export async function categorizeWithRetry(
-  instructions: string,
-  inputComments: Comment[],
-  includeSubtopics: boolean,
-  topics: Topic[]
-): Promise<Comment[]> {
-  // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
-  let uncategorized: Comment[] = [...inputComments];
-  const categorized: Comment[] = [];
-  // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
-  const inputCommentsLookup = new Map<string, Comment>(
-    inputComments.map((comment) => [comment.id, comment])
-  );
-
-  for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
-    // convert JSON to string representation that will be sent to the model
-    const uncategorizedCommentsForModel: string[] = uncategorized.map((comment) =>
-      JSON.stringify({ id: comment.id, text: comment.text })
-    );
-
-    const newCategorized: Comment[] = await GEMINI_MODEL.generateComments(
-      getPrompt(instructions, uncategorizedCommentsForModel),
-      includeSubtopics
-    );
-    // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
-    const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(
-      newCategorized,
-      inputCommentsLookup
-    );
-
-    // perform validation, update categorized, reset uncategorized
-    uncategorized = processCategorizedComments(
-      newCategorizedComments,
-      inputComments,
-      uncategorized,
-      includeSubtopics,
-      topics,
-      categorized
-    );
-
-    if (uncategorized.length === 0) {
-      break; // All comments categorized successfully
-    }
-
-    if (attempts < MAX_RETRIES) {
-      console.warn(
-        `Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    } else {
-      assignDefaultCategory(uncategorized, categorized);
-    }
-  }
-
-  return categorized;
 }

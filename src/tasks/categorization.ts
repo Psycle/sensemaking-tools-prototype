@@ -13,10 +13,81 @@
 // limitations under the License.
 
 import { Comment, Topic } from "../types";
+import { MAX_RETRIES, RETRY_DELAY_MS } from "../models/vertex_model";
+import { Model } from "../models/model";
+import { getPrompt } from "../sensemaker_utils";
 
 /**
  * @fileoverview Helper functions for performing comments categorization.
  */
+
+
+/**
+ * Makes API call to generate JSON and retries with any comments that were not properly categorized.
+ * @param instructions Instructions for the LLM on how to categorize the comments.
+ * @param inputComments The comments to categorize.
+ * @param includeSubtopics Whether to include subtopics in the categorization.
+ * @param topics The topics and subtopics provided to the LLM for categorization.
+ * @returns The categorized comments.
+ */
+export async function categorizeWithRetry(
+  model: Model,
+  instructions: string,
+  inputComments: Comment[],
+  includeSubtopics: boolean,
+  topics: Topic[]
+): Promise<Comment[]> {
+  // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
+  let uncategorized: Comment[] = [...inputComments];
+  const categorized: Comment[] = [];
+  // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
+  const inputCommentsLookup = new Map<string, Comment>(
+    inputComments.map((comment) => [comment.id, comment])
+  );
+
+  for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
+    // convert JSON to string representation that will be sent to the model
+    const uncategorizedCommentsForModel: string[] = uncategorized.map((comment) =>
+      JSON.stringify({ id: comment.id, text: comment.text })
+    );
+
+    const newCategorized: Comment[] = await model.generateComments(
+      getPrompt(instructions, uncategorizedCommentsForModel),
+      includeSubtopics
+    );
+    // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
+    const newCategorizedComments: Comment[] = addMissingTextToCategorizedComments(
+      newCategorized,
+      inputCommentsLookup
+    );
+
+    // perform validation, update categorized, reset uncategorized
+    uncategorized = processCategorizedComments(
+      newCategorizedComments,
+      inputComments,
+      uncategorized,
+      includeSubtopics,
+      topics,
+      categorized
+    );
+
+    if (uncategorized.length === 0) {
+      break; // All comments categorized successfully
+    }
+
+    if (attempts < MAX_RETRIES) {
+      console.warn(
+        `Expected all ${uncategorizedCommentsForModel.length} comments to be categorized, but ${uncategorized.length} are not categorized properly. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    } else {
+      assignDefaultCategory(uncategorized, categorized);
+    }
+  }
+
+  return categorized;
+}
+
 
 export function topicCategorizationPrompt(topics: Topic[]): string {
   return `
@@ -286,7 +357,8 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
     return JSON.parse(topicsJsonString);
   } catch (error) {
     throw new Error(
-      "Invalid topics JSON string. Please provide a valid JSON array of Topic objects."
+      `Invalid topics JSON string. Please provide a valid JSON array of Topic objects,
+      JSON parse error: ${error}`
     );
   }
 }
@@ -343,7 +415,7 @@ export function groupCommentsByTopic(categorized: Comment[]): string {
  * @param categorized The array of already categorized comments.
  * @returns The updated array of uncategorized comments.
  */
-export function processCategorizedComments(
+function processCategorizedComments(
   newCategorizedComments: Comment[],
   inputComments: Comment[],
   uncategorized: Comment[],
@@ -371,7 +443,7 @@ export function processCategorizedComments(
  * @param uncategorized The array of comments that failed categorization.
  * @param categorized The array of successfully categorized comments.
  */
-export function assignDefaultCategory(uncategorized: Comment[], categorized: Comment[]) {
+function assignDefaultCategory(uncategorized: Comment[], categorized: Comment[]) {
   console.warn(
     `Failed to categorize ${uncategorized.length} comments after maximum number of retries. Assigning "Other" topic and "Uncategorized" subtopic to failed comments.`
   );

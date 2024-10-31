@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { categorize, categorizeWithRetry, learnTopics } from "./sensemaker";
+import { categorizeComments, learnTopics } from "./sensemaker";
 import { Comment } from "./types";
 import { VertexModel } from "./models/vertex_model";
 
@@ -37,9 +37,8 @@ describe("SensemakerTest", () => {
         { id: "1", text: "Comment 1" },
         { id: "2", text: "Comment 2" },
       ];
-      const topics = '[{"name": "Topic 1"}]';
+      const topics = [{"name": "Topic 1"}];
       const includeSubtopics = false;
-      const batchSize = 1;
       mockGenerateComments
         .mockReturnValueOnce(
           Promise.resolve([
@@ -60,13 +59,12 @@ describe("SensemakerTest", () => {
           ])
         );
 
-      const categorizedComments = await categorize(
+      const categorizedComments = await categorizeComments(
         comments,
         includeSubtopics,
         topics,
         undefined,
-        false,
-        batchSize
+        false
       );
 
       expect(mockGenerateComments).toHaveBeenCalledTimes(2);
@@ -85,138 +83,6 @@ describe("SensemakerTest", () => {
         },
       ];
       expect(categorizedComments).toEqual(JSON.stringify(expected, null, 2));
-    });
-
-    it("should retry categorization with all missing comments", async () => {
-      const comments: Comment[] = [
-        { id: "1", text: "Comment 1" },
-        { id: "2", text: "Comment 2" },
-        { id: "3", text: "Comment 3" },
-      ];
-      const includeSubtopics = false;
-      const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
-      const commentsWithTextAndTopics = [
-        {
-          id: "1",
-          text: "Comment 1",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-        {
-          id: "2",
-          text: "Comment 2",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-        {
-          id: "3",
-          text: "Comment 3",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-      ];
-
-      // The first response is incorrectly missing all comments, and then
-      // on retry the text is present.
-      mockGenerateComments
-        .mockReturnValueOnce(Promise.resolve([]))
-        .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
-
-      const categorizedComments = await categorizeWithRetry(
-        instructions,
-        comments,
-        includeSubtopics,
-        [{ name: "Topic 1", subtopics: [] }]
-      );
-
-      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(commentsWithTextAndTopics);
-    });
-
-    it("should retry categorization with some missing comments", async () => {
-      const comments: Comment[] = [
-        { id: "1", text: "Comment 1" },
-        { id: "2", text: "Comment 2" },
-        { id: "3", text: "Comment 3" },
-      ];
-      const includeSubtopics = false;
-      const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
-      const commentsWithTextAndTopics = [
-        {
-          id: "1",
-          text: "Comment 1",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-        {
-          id: "2",
-          text: "Comment 2",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-        {
-          id: "3",
-          text: "Comment 3",
-          topics: [{ name: "Topic 1", subtopics: [] }],
-        },
-      ];
-
-      // The first mock response includes only one comment, and for the next
-      // response the two missing comments are returned.
-      mockGenerateComments
-        .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[0]]))
-        .mockReturnValueOnce(
-          Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
-        );
-
-      const categorizedComments = await categorizeWithRetry(
-        instructions,
-        comments,
-        includeSubtopics,
-        [{ name: "Topic 1", subtopics: [] }]
-      );
-
-      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(commentsWithTextAndTopics);
-    });
-
-    it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
-      const comments: Comment[] = [
-        { id: "1", text: "Comment 1" },
-        { id: "2", text: "Comment 2" },
-        { id: "3", text: "Comment 3" },
-      ];
-      const topics = '[{"name": "Topic 1", "subtopics": []}]';
-      const instructions = "Categorize the comments based on these topics: " + topics;
-      const includeSubtopics = true;
-      const topicsJson = [{ name: "Topic 1", subtopics: [] }];
-
-      // Mock the model to always return an empty response. This simulates a
-      // categorization failure.
-      mockGenerateComments.mockReturnValue(Promise.resolve([]));
-
-      const categorizedComments = await categorizeWithRetry(
-        instructions,
-        comments,
-        includeSubtopics,
-        topicsJson
-      );
-
-      expect(mockGenerateComments).toHaveBeenCalledTimes(3);
-
-      const expected = [
-        {
-          id: "1",
-          text: "Comment 1",
-          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
-        },
-        {
-          id: "2",
-          text: "Comment 2",
-          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
-        },
-        {
-          id: "3",
-          text: "Comment 3",
-          topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
-        },
-      ];
-      expect(categorizedComments).toEqual(expected);
     });
   });
 

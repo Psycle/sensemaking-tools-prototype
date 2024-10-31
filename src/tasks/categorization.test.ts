@@ -18,10 +18,161 @@ import {
   generateCategorizationPrompt,
   groupCommentsByTopic,
   validateCategorizedComments,
+  categorizeWithRetry
 } from "./categorization";
 import { Comment, Topic } from "../types";
+import { VertexModel } from "../models/vertex_model";
 
-describe("generateCategorizationPrompt", () => {
+
+// Mock the model response. This mock needs to be set up to return response specific for each test.
+let mockGenerateComments: jest.SpyInstance;
+let mockGenerateTopics: jest.SpyInstance;
+
+describe("CategorizationTest", () => {
+  beforeEach(() => {
+    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateComments");
+    mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
+  });
+
+  afterEach(() => {
+    mockGenerateTopics.mockRestore();
+    mockGenerateComments.mockRestore();
+  });
+  it("should retry categorization with all missing comments", async () => {
+    const comments: Comment[] = [
+      { id: "1", text: "Comment 1" },
+      { id: "2", text: "Comment 2" },
+      { id: "3", text: "Comment 3" },
+    ];
+    const includeSubtopics = false;
+    const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+    const commentsWithTextAndTopics = [
+      {
+        id: "1",
+        text: "Comment 1",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+      {
+        id: "2",
+        text: "Comment 2",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+      {
+        id: "3",
+        text: "Comment 3",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+    ];
+
+    // The first response is incorrectly missing all comments, and then
+    // on retry the text is present.
+    mockGenerateComments
+      .mockReturnValueOnce(Promise.resolve([]))
+      .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
+
+    const categorizedComments = await categorizeWithRetry(
+      new VertexModel('project', 'location', 'gemini-1000'),
+      instructions,
+      comments,
+      includeSubtopics,
+      [{ name: "Topic 1", subtopics: [] }]
+    );
+
+    expect(mockGenerateComments).toHaveBeenCalledTimes(2);
+    expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+  });
+
+  it("should retry categorization with some missing comments", async () => {
+    const comments: Comment[] = [
+      { id: "1", text: "Comment 1" },
+      { id: "2", text: "Comment 2" },
+      { id: "3", text: "Comment 3" },
+    ];
+    const includeSubtopics = false;
+    const instructions = "Categorize the comments based on these topics:  [{'name': 'Topic 1'}]";
+    const commentsWithTextAndTopics = [
+      {
+        id: "1",
+        text: "Comment 1",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+      {
+        id: "2",
+        text: "Comment 2",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+      {
+        id: "3",
+        text: "Comment 3",
+        topics: [{ name: "Topic 1", subtopics: [] }],
+      },
+    ];
+
+    // The first mock response includes only one comment, and for the next
+    // response the two missing comments are returned.
+    mockGenerateComments
+      .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[0]]))
+      .mockReturnValueOnce(
+        Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
+      );
+
+    const categorizedComments = await categorizeWithRetry(
+      new VertexModel('project', 'location', 'gemini-1000'),
+      instructions,
+      comments,
+      includeSubtopics,
+      [{ name: "Topic 1", subtopics: [] }]
+    );
+
+    expect(mockGenerateComments).toHaveBeenCalledTimes(2);
+    expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+  });
+
+  it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
+    const comments: Comment[] = [
+      { id: "1", text: "Comment 1" },
+      { id: "2", text: "Comment 2" },
+      { id: "3", text: "Comment 3" },
+    ];
+    const topics = '[{"name": "Topic 1", "subtopics": []}]';
+    const instructions = "Categorize the comments based on these topics: " + topics;
+    const includeSubtopics = true;
+    const topicsJson = [{ name: "Topic 1", subtopics: [] }];
+
+    // Mock the model to always return an empty response. This simulates a
+    // categorization failure.
+    mockGenerateComments.mockReturnValue(Promise.resolve([]));
+
+    const categorizedComments = await categorizeWithRetry(
+      new VertexModel('project', 'location', 'gemini-1000'),
+      instructions,
+      comments,
+      includeSubtopics,
+      topicsJson
+    );
+
+    expect(mockGenerateComments).toHaveBeenCalledTimes(3);
+
+    const expected = [
+      {
+        id: "1",
+        text: "Comment 1",
+        topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+      },
+      {
+        id: "2",
+        text: "Comment 2",
+        topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+      },
+      {
+        id: "3",
+        text: "Comment 3",
+        topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
+      },
+    ];
+    expect(categorizedComments).toEqual(expected);
+  });
+
   it("should generate a 1-level categorization prompt (topics only)", () => {
     const sampleTopics: Topic[] = [{ name: "Economic Development" }, { name: "Housing" }];
     const includeSubtopics = false;
@@ -59,9 +210,9 @@ describe("addMissingTextToCategorizedComments", () => {
       ["1", { id: "1", text: "This is comment 1", topics: [] }],
       ["2", { id: "2", text: "This is comment 2", topics: [] }],
     ]);
-    const categorizedComments = [
-      { id: "1", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "2", topics: [{ name: "Topic 2", subtopics: [] }] },
+    const categorizedComments: Comment[] = [
+      { id: "1", text: "hi", topics: [{ name: "Topic 1", subtopics: [] }] },
+      { id: "2", text: "hello", topics: [{ name: "Topic 2", subtopics: [] }] },
     ];
 
     const result = addMissingTextToCategorizedComments(categorizedComments, inputCommentsLookup);

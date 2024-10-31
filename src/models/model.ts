@@ -29,6 +29,9 @@ export interface ModelSettings {
 
 // An abstract base class that defines how to interact with models.
 export abstract class Model {
+  // The best batch size to use for categorization.
+  public readonly categorizationBatchSize = 100;
+
   /**
    * A general call to the given model.
    * @param prompt - what information and instructions are given to the model.
