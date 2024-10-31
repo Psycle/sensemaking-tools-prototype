@@ -37,12 +37,6 @@ const GEMINI_MODEL = new VertexModel(
   "gemini-1.5-pro-002"
 );
 
-class NotImplementedError extends Error {
-  constructor() {
-    super("Not implemented");
-  }
-}
-
 /**
  * Summarize a set of comments using all available metadata.
  * @param comments the text and (optional) vote data to consider
@@ -67,32 +61,22 @@ export function summarize(
 }
 
 /**
- * Parses a comma-separated string of topics into an array of trimmed strings.
- *
- * @param topics The comma-separated string of topics (may be undefined, empty, or contain only whitespace).
- * @returns An array of trimmed topic strings, or undefined if the input is undefined, empty, or contains only whitespace.
- */
-function parseTopics(topics: string | undefined): string[] | undefined {
-  if (topics && topics.trim() !== "") {
-    return topics.split(",").map((topic) => topic.trim());
-  }
-  // No need to return undefined explicitly here, as it's the default if the condition is false.
-}
-
-/**
  * Extracts topics from the comments using a LLM on Vertex AI. Retries if the LLM response is invalid.
  * @param comments The comments data for topic modeling
  * @param includeSubtopics Whether to include subtopics in the topic modeling
- * @param topics Optional. The user provided comma-separated string of top-level topics
- * @returns: The LLM's topic modeling.
+ * @param topics Optional. The user provided top-level topics, if these are specified only
+ * subtopics will be learned.
+ * @param additionalInstructions Optional. Context to add to the LLM prompt.
+ * @returns: Topics (optionally containing subtopics) representing what is discussed in the
+ * comments.
  */
 export async function learnTopics(
   comments: Comment[],
   includeSubtopics: boolean,
-  topics?: string
-): Promise<string> {
-  const parentTopics = parseTopics(topics);
-  const instructions = generateTopicModelingPrompt(includeSubtopics, parentTopics);
+  topics?: Topic[],
+  additionalInstructions?: string
+): Promise<Topic[]> {
+  const instructions = generateTopicModelingPrompt(includeSubtopics, topics);
   // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
   const commentTexts = comments.map((comment) => "```" + comment.text + "```");
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -101,8 +85,8 @@ export async function learnTopics(
       includeSubtopics
     );
 
-    if (learnedTopicsValid(response, parentTopics)) {
-      return JSON.stringify(response, null, 2);
+    if (learnedTopicsValid(response, topics)) {
+      return response;
     } else {
       console.warn(
         `Learned topics failed validation, attempt ${attempt}. Retrying in ${RETRY_DELAY_MS / 1000} seconds...`
@@ -131,8 +115,7 @@ export async function categorizeComments(
   groupByTopic: boolean = false
 ): Promise<string> {
   if (!topics) {
-    // TODO: should call learnTopics here but the return type isn't right.
-    throw new NotImplementedError();
+    topics = await learnTopics(comments, includeSubtopics, undefined, additionalInstructions);
   }
   const givenTopicsContainSubtopics = topics.some((topic: Topic) => {
     return topic.subtopics !== undefined && topic.subtopics.length > 0;

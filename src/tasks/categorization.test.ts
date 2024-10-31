@@ -18,11 +18,10 @@ import {
   generateCategorizationPrompt,
   groupCommentsByTopic,
   validateCategorizedComments,
-  categorizeWithRetry
+  categorizeWithRetry,
 } from "./categorization";
 import { Comment, Topic } from "../types";
 import { VertexModel } from "../models/vertex_model";
-
 
 // Mock the model response. This mock needs to be set up to return response specific for each test.
 let mockGenerateComments: jest.SpyInstance;
@@ -71,7 +70,7 @@ describe("CategorizationTest", () => {
       .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
     const categorizedComments = await categorizeWithRetry(
-      new VertexModel('project', 'location', 'gemini-1000'),
+      new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
       includeSubtopics,
@@ -117,7 +116,7 @@ describe("CategorizationTest", () => {
       );
 
     const categorizedComments = await categorizeWithRetry(
-      new VertexModel('project', 'location', 'gemini-1000'),
+      new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
       includeSubtopics,
@@ -144,7 +143,7 @@ describe("CategorizationTest", () => {
     mockGenerateComments.mockReturnValue(Promise.resolve([]));
 
     const categorizedComments = await categorizeWithRetry(
-      new VertexModel('project', 'location', 'gemini-1000'),
+      new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
       includeSubtopics,

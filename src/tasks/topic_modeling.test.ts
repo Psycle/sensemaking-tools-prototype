@@ -30,7 +30,11 @@ describe("generateTopicModelingPrompt", () => {
 
   it("should generate a prompt for learning subtopics with given top-level topics (depth 2)", () => {
     const includeSubtopics = true;
-    const parentTopics = ["Economic Development", "Housing", "Infrastructure"];
+    const parentTopics = [
+      { name: "Economic Development" },
+      { name: "Housing" },
+      { name: "Infrastructure" },
+    ];
     const expectedPrompt = learnSubtopicsPrompt(parentTopics);
 
     const prompt = generateTopicModelingPrompt(includeSubtopics, parentTopics);

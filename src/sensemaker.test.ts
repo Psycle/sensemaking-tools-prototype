@@ -37,7 +37,7 @@ describe("SensemakerTest", () => {
         { id: "1", text: "Comment 1" },
         { id: "2", text: "Comment 2" },
       ];
-      const topics = [{"name": "Topic 1"}];
+      const topics = [{ name: "Topic 1" }];
       const includeSubtopics = false;
       mockGenerateComments
         .mockReturnValueOnce(
@@ -94,7 +94,7 @@ describe("SensemakerTest", () => {
         { id: "3", text: "Another comment about Roads" },
       ];
       const includeSubtopics = true;
-      const topics = "Infrastructure, Environment";
+      const topics = [{ name: "Infrastructure" }, { name: "Environment" }];
 
       const validResponse = [
         {
@@ -127,7 +127,7 @@ describe("SensemakerTest", () => {
       const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
+      expect(categorizedComments).toEqual(validResponse);
     });
 
     it("should retry topic modeling when a new topic is added", async () => {
@@ -137,7 +137,7 @@ describe("SensemakerTest", () => {
         { id: "3", text: "Another comment about Roads" },
       ];
       const includeSubtopics = true;
-      const topics = "Infrastructure, Environment";
+      const topics = [{ name: "Infrastructure" }, { name: "Environment" }];
 
       const validResponse = [
         {
@@ -174,7 +174,7 @@ describe("SensemakerTest", () => {
       const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(JSON.stringify(validResponse, null, 2));
+      expect(categorizedComments).toEqual(validResponse);
     });
   });
 });

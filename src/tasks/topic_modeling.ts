@@ -47,10 +47,11 @@ ${IMPORTANT_CONSIDERATIONS}
 - If a comment is too vague to be assigned to any specific topic, use the 'Other' topic and determine an appropriate subtopic for it.
 `;
 
-export function learnSubtopicsPrompt(parentTopics: string[]): string {
+export function learnSubtopicsPrompt(parentTopics: Topic[]): string {
+  const parentTopicNames: string = parentTopics.map((topic: Topic) => topic.name).join(", ");
   return `
 Analyze the following comments and identify relevant subtopics within each of the following main topics:
-${JSON.stringify(parentTopics)}
+${parentTopicNames}
 
 Important Considerations:
 ${IMPORTANT_CONSIDERATIONS}
@@ -87,7 +88,7 @@ Example of Incorrect Output:
  */
 export function generateTopicModelingPrompt(
   includeSubtopics: boolean,
-  parentTopics?: string[]
+  parentTopics?: Topic[]
 ): string {
   if (!includeSubtopics) {
     return LEARN_TOPICS_PROMPT;
@@ -105,12 +106,12 @@ export function generateTopicModelingPrompt(
  * @param parentTopics Optional. An array of parent topic names to validate against.
  * @returns True if the response is valid, false otherwise.
  */
-export function learnedTopicsValid(response: Topic[], parentTopics?: string[]): boolean {
+export function learnedTopicsValid(response: Topic[], parentTopics?: Topic[]): boolean {
   const topicNames = response.map((topic) => topic.name);
 
   // 1. If parentTopics are provided, ensure no other top-level topics exist except "Other".
   if (parentTopics) {
-    const allowedTopicNames = [...parentTopics, "Other"];
+    const allowedTopicNames = parentTopics.map((topic: Topic) => topic.name).concat("Other");
     if (!topicNames.every((name) => allowedTopicNames.includes(name))) {
       console.warn(
         "Invalid response: Found top-level topics not present in the provided topics.",

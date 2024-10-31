@@ -21,7 +21,6 @@ import { getPrompt } from "../sensemaker_utils";
  * @fileoverview Helper functions for performing comments categorization.
  */
 
-
 /**
  * Makes API call to generate JSON and retries with any comments that were not properly categorized.
  * @param instructions Instructions for the LLM on how to categorize the comments.
@@ -87,7 +86,6 @@ export async function categorizeWithRetry(
 
   return categorized;
 }
-
 
 export function topicCategorizationPrompt(topics: Topic[]): string {
   return `
