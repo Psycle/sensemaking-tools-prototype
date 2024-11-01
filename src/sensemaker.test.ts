@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { categorizeComments, learnTopics } from "./sensemaker";
+import { Sensemaker } from "./sensemaker";
 import { Comment } from "./types";
 import { VertexModel } from "./models/vertex_model";
+import { ModelSettings } from "./models/model";
 
+const TEST_MODEL_SETTINGS: ModelSettings = {
+  defaultModel: new VertexModel("project", "location", "Gemma1234"),
+};
 // Mock the model response. This mock needs to be set up to return response specific for each test.
 let mockGenerateComments: jest.SpyInstance;
 let mockGenerateTopics: jest.SpyInstance;
@@ -59,7 +63,7 @@ describe("SensemakerTest", () => {
           ])
         );
 
-      const categorizedComments = await categorizeComments(
+      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).categorizeComments(
         comments,
         includeSubtopics,
         topics,
@@ -123,7 +127,11 @@ describe("SensemakerTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
+      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
+        comments,
+        includeSubtopics,
+        topics
+      );
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(validResponse);
@@ -170,7 +178,11 @@ describe("SensemakerTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await learnTopics(comments, includeSubtopics, topics);
+      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
+        comments,
+        includeSubtopics,
+        topics
+      );
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
       expect(categorizedComments).toEqual(validResponse);

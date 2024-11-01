@@ -22,9 +22,9 @@ import { Topic, Comment } from "../types";
 // may be different for different modeling tasks.
 export interface ModelSettings {
   defaultModel: Model;
-  summarizationModel: Model;
-  categorizationModel: Model;
-  groundingModel: Model;
+  summarizationModel?: Model;
+  categorizationModel?: Model;
+  groundingModel?: Model;
 }
 
 // An abstract base class that defines how to interact with models.
