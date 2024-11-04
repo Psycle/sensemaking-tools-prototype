@@ -227,21 +227,22 @@ const topicAndSubtopicCategorizationSchema: Schema = {
  * @returns A model specification object ready to be used with vertex_ai.getGenerativeModel().
  */
 function getModelSpec(modelName: string, schema?: Schema): ModelParams {
-  return {
+  const modelParams: ModelParams = {
     model: modelName,
     generationConfig: {
       // Param docs: http://cloud/vertex-ai/generative-ai/docs/model-reference/inference#generationconfig
       maxOutputTokens: 8192,
       temperature: 0,
       topP: 0,
-      ...(schema && {
-        // if no `schema` is provided, the params below won't be set
-        response_mime_type: "application/json",
-        schema,
-      }),
     },
     safetySettings: safetySettings,
   };
+
+  if (schema && modelParams.generationConfig) {
+    modelParams.generationConfig.responseMimeType = "application/json";
+    modelParams.generationConfig.responseSchema = schema;
+  }
+  return modelParams;
 }
 
 // The maximum number of times an API call should be retried.
