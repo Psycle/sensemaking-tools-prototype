@@ -268,11 +268,17 @@ export async function generateCommentsWithModel(
   model: GenerativeModel
 ): Promise<Comment[]> {
   const response = await generateJSON(prompt, model);
-  if (!response.every((comment: Comment) => isCommentType(comment))) {
+  // TODO: reconsider this quick fix. The model is explicitly prompted to remove the text so that
+  // the output is shorter.
+  const comments = response.map((comment) => {
+    comment.text = comment.text || "";
+    return comment;
+  });
+  if (!comments.every((comment) => isCommentType(comment))) {
     // TODO: Add retry logic for this error.
     throw new Error("Model response comments are not all valid, response: " + response);
   }
-  return response;
+  return comments;
 }
 
 /**
