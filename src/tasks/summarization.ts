@@ -25,11 +25,18 @@ const DEFAULT_INSTRUCTIONS = `Please summarize the public's perspective in relat
  * Summarizes the comments using a LLM on Vertex.
  * @param instructions: how the comments should be summarized.
  * @param comments: the data to summarize
+ * @param additionalInstructions: additional context to include in the prompt.
  * @returns: the LLM's summarization.
  */
-export async function basicSummarize(comments: Comment[], model: Model): Promise<string> {
+export async function basicSummarize(
+  comments: Comment[],
+  model: Model,
+  additionalInstructions?: string
+): Promise<string> {
   const commentTexts = comments.map((comment) => comment.text);
-  return await model.executeRequest(getPrompt(DEFAULT_INSTRUCTIONS, commentTexts));
+  return await model.executeRequest(
+    getPrompt(DEFAULT_INSTRUCTIONS, commentTexts, additionalInstructions)
+  );
 }
 
 /**
@@ -48,10 +55,15 @@ export function formatCommentsWithVotes(commentData: Comment[]): string[] {
  * Summarizes the comments using a LLM on Vertex.
  * @param instructions: how the comments should be summarized.
  * @param commentData: the data to summarize, as an array of Comment objects
+ * @param additionalInstructions: additional context to include in the prompt.
  * @returns: the LLM's summarization.
  */
-export async function voteTallySummarize(commentData: Comment[], model: Model): Promise<string> {
+export async function voteTallySummarize(
+  commentData: Comment[],
+  model: Model,
+  additionalInstructions?: string
+): Promise<string> {
   return await model.executeRequest(
-    getPrompt(DEFAULT_INSTRUCTIONS, formatCommentsWithVotes(commentData))
+    getPrompt(DEFAULT_INSTRUCTIONS, formatCommentsWithVotes(commentData), additionalInstructions)
   );
 }

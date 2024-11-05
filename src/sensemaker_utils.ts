@@ -18,11 +18,13 @@
  * Combines the data and instructions into a prompt to send to Vertex.
  * @param instructions: what the model should do.
  * @param data: the data that the model should consider.
+ * @param additionalInstructions additional context to include in the prompt.
  * @returns the instructions and the data as a text
  */
-export function getPrompt(instructions: string, data: string[]) {
+export function getPrompt(instructions: string, data: string[], additionalInstructions?: string) {
   return `Instructions:
 ${instructions}
+${additionalInstructions ? "\nAdditional context:\n" + additionalInstructions + "\n" : ""}
 Comments:
 ${data.join("\n")}`; // separate comments with newlines
 }

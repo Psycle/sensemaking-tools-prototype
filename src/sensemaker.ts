@@ -55,9 +55,9 @@ export class Sensemaker {
     additionalInstructions?: string
   ): Promise<string> {
     if (summarizationType == SummarizationType.BASIC) {
-      return basicSummarize(comments, this.modelSettings.defaultModel);
+      return basicSummarize(comments, this.modelSettings.defaultModel, additionalInstructions);
     } else if (summarizationType == SummarizationType.VOTE_TALLY) {
-      return voteTallySummarize(comments, this.modelSettings.defaultModel);
+      return voteTallySummarize(comments, this.modelSettings.defaultModel, additionalInstructions);
     } else {
       throw TypeError("Unknown Summarization Type.");
     }

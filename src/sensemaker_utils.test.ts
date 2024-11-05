@@ -16,8 +16,33 @@ import { getPrompt } from "./sensemaker_utils";
 
 describe("SensemakerUtilsTest", () => {
   it("should create a prompt", () => {
-    expect(getPrompt("Summarize this:", ["comment1", "comment2"])).toEqual(
-      "Instructions:\n" + "Summarize this:\n" + "Comments:\n" + "comment1\n" + "comment2"
+    expect(getPrompt("Summarize this.", ["comment1", "comment2"])).toEqual(
+      `Instructions:
+Summarize this.
+
+Comments:
+comment1
+comment2`
+    );
+  });
+
+  it("should include additional instructions in the prompt", () => {
+    expect(
+      getPrompt(
+        "Summarize this.",
+        ["comment1", "comment2"],
+        "This is for a town hall style deliberation"
+      )
+    ).toEqual(
+      `Instructions:
+Summarize this.
+
+Additional context:
+This is for a town hall style deliberation
+
+Comments:
+comment1
+comment2`
     );
   });
 });
