@@ -84,7 +84,7 @@ export class Sensemaker {
     const commentTexts = comments.map((comment) => "```" + comment.text + "```");
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       const response = await this.modelSettings.defaultModel.generateTopics(
-        getPrompt(instructions, commentTexts),
+        getPrompt(instructions, commentTexts, additionalInstructions),
         includeSubtopics
       );
 
@@ -142,7 +142,8 @@ export class Sensemaker {
         instructions,
         uncategorizedBatch,
         includeSubtopics,
-        topics
+        topics,
+        additionalInstructions
       );
       categorized.push(...categorizedBatch);
     }

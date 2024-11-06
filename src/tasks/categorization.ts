@@ -27,6 +27,7 @@ import { getPrompt } from "../sensemaker_utils";
  * @param inputComments The comments to categorize.
  * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param topics The topics and subtopics provided to the LLM for categorization.
+ * @param additionalInstructions - extra context to be included to the LLM prompt
  * @returns The categorized comments.
  */
 export async function categorizeWithRetry(
@@ -34,7 +35,8 @@ export async function categorizeWithRetry(
   instructions: string,
   inputComments: Comment[],
   includeSubtopics: boolean,
-  topics: Topic[]
+  topics: Topic[],
+  additionalInstructions?: string
 ): Promise<Comment[]> {
   // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
   let uncategorized: Comment[] = [...inputComments];
@@ -51,7 +53,7 @@ export async function categorizeWithRetry(
     );
 
     const newCategorized: Comment[] = await model.generateComments(
-      getPrompt(instructions, uncategorizedCommentsForModel),
+      getPrompt(instructions, uncategorizedCommentsForModel, additionalInstructions),
       includeSubtopics
     );
     // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
@@ -328,9 +330,11 @@ export function findMissingComments(
  * @returns An array of Comment objects with the 'text' property added.
  */
 export function addMissingTextToCategorizedComments(
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   categorizedComments: any[],
   inputCommentsLookup: Map<string, Comment>
 ): Comment[] {
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   categorizedComments.forEach((categorizedComment: any) => {
     const inputComment = inputCommentsLookup.get(categorizedComment.id);
     if (inputComment) {
