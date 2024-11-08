@@ -14,8 +14,7 @@ npm install
 
 ### GCloud setup
 
-- For external installation: <https://cloud.google.com/sdk/docs/install-sdk#deb>
-- For Google internal: <go/gcloudcli>
+- For installation: <https://cloud.google.com/sdk/docs/install-sdk#deb>
 
 ```
 sudo apt install -y google-cloud-cli
