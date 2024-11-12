@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { generateCommentsWithModel, generateJSON, generateTopicsWithModel } from "./vertex_model";
+import {
+  generateCategorizedCommentsWithModel,
+  generateJSON,
+  generateTopicsWithModel,
+} from "./vertex_model";
 import { GenerativeModel } from "@google-cloud/vertexai";
-import { Comment, Topic } from "../types";
+import { CategorizedComment, Topic } from "../types";
 
 // Mock the VertexAI module - this mock will be used when the module is imported within a test run.
 jest.mock("@google-cloud/vertexai", () => {
@@ -98,13 +102,13 @@ describe("ModelTest", () => {
     });
 
     it("should generate valid comments", async () => {
-      const expectedComments: Comment[] = [
+      const expectedComments: CategorizedComment[] = [
         { id: "1", text: "hi", topics: [{ name: "Topic 1" }] },
         { id: "1", text: "hi", topics: [{ name: "Topic 1" }] },
       ];
       mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedComments));
 
-      const result = await generateCommentsWithModel(
+      const result = await generateCategorizedCommentsWithModel(
         "Some instructions",
         generativeJsonModelMock as unknown as GenerativeModel
       );

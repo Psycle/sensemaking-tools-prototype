@@ -16,11 +16,11 @@
 
 // TODO: remove this once the library more closely matches the library specification doc. The
 // unused variables should be gone once the library is more fully implemented.
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
-import { MAX_RETRIES, RETRY_DELAY_MS, VertexModel } from "./models/vertex_model";
-import { Comment, SummarizationType, Topic } from "./types";
+import { MAX_RETRIES, RETRY_DELAY_MS } from "./models/vertex_model";
+import { CategorizedComment, Comment, SummarizationType, Topic } from "./types";
 import { categorizeWithRetry, generateCategorizationPrompt } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
 import { getPrompt } from "./sensemaker_utils";
@@ -114,7 +114,7 @@ export class Sensemaker {
     includeSubtopics: boolean,
     topics?: Topic[],
     additionalInstructions?: string
-  ): Promise<Comment[]> {
+  ): Promise<CategorizedComment[]> {
     if (!topics) {
       topics = await this.learnTopics(
         comments,
@@ -127,7 +127,7 @@ export class Sensemaker {
     const instructions = generateCategorizationPrompt(topics, includeSubtopics);
 
     // Call the model in batches, validate results and retry if needed.
-    const categorized: Comment[] = [];
+    const categorized: CategorizedComment[] = [];
     for (
       let i = 0;
       i < comments.length;
