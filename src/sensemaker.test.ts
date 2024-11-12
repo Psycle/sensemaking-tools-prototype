@@ -26,7 +26,7 @@ let mockGenerateTopics: jest.SpyInstance;
 
 describe("SensemakerTest", () => {
   beforeEach(() => {
-    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateComments");
+    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateCategorizedComments");
     mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
   });
 

@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { VoteTally, isTopicType, isVoteTallyType, isCommentType } from "./types";
+import {
+  VoteTally,
+  isTopicType,
+  isVoteTallyType,
+  isCommentType,
+  isCategorizedCommentType,
+} from "./types";
 
 describe("Types Test", () => {
   it("The total votes should be the sum of all the different VoteTally values", () => {
@@ -39,7 +45,6 @@ describe("Types Test", () => {
         voteTalliesByGroup: { "group 1": { agreeCount: 1, disagreeCount: 2 } },
       })
     ).toBeTruthy();
-    expect(isCommentType({ id: "2", text: "hello", topics: [{ name: "Topic 1" }] })).toBeTruthy();
   });
 
   it("Invalid Comment should fail isCommentType", () => {
@@ -52,8 +57,32 @@ describe("Types Test", () => {
         voteTalliesByGroup: { "group 1": { agreeCount: "1", disagreeCount: "2" } },
       })
     ).toBeFalsy();
-    // The Topic List can't be empty
-    expect(isCommentType({ id: "abc", text: "hi", topics: [{}] })).toBeFalsy();
+  });
+
+  it("Valid CategorizedComment should pass isCategorizedCommentType", () => {
+    expect(isCategorizedCommentType({ id: "123", topics: [] })).toBeTruthy();
+    expect(
+      isCategorizedCommentType({
+        id: "123",
+        text: "hello",
+        topics: [],
+        voteTalliesByGroup: { "group 1": { agreeCount: 1, disagreeCount: 2 } },
+      })
+    ).toBeTruthy();
+  });
+
+  it("Invalid CategorizedComment should fail isCategorizedCommentType", () => {
+    // ID is required.
+    expect(isCategorizedCommentType({ topics: [{ name: "Healthcare" }] })).toBeFalsy();
+    // ID must be of type string.
+    expect(isCategorizedCommentType({ id: 1, topics: [{ name: "Healthcare" }] })).toBeFalsy();
+    // Topics must be valid, the second one is missing a name.
+    expect(
+      isCategorizedCommentType({
+        id: 1,
+        topics: [{ name: "Healthcare" }, { subtopics: { name: "Public Parks" } }],
+      })
+    ).toBeFalsy();
   });
 
   it("Valid Topics should pass isTopicType", () => {

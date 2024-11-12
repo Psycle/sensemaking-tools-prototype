@@ -69,7 +69,21 @@ export interface Comment {
   id: string;
   text: string;
   voteTalliesByGroup?: { [key: string]: VoteTally };
-  topics?: Topic[];
+}
+
+/**
+ * Checks if the given object is a dictionary of group names to VoteTally objects.
+ * @param data the object to check
+ * @returns true if the object is a dictionary of groups to VoteTallys.
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+function isVoteTallyByGroup(data: any): boolean {
+  return (
+    Object.keys(data).every((groupName: string) => typeof groupName === "string") &&
+    Array.isArray(Object.values(data)) &&
+    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+    Object.values(data).every((voteTally: any) => isVoteTallyType(voteTally))
+  );
 }
 
 /**
@@ -91,16 +105,39 @@ export function isCommentType(data: any): data is Comment {
     typeof data.text === "string" &&
     // Check that if voteTalliesByGroup dictionary exists all the keys are strings and values
     // are VoteTally objects.
-    (!("voteTalliesByGroup" in data) ||
-      (Object.keys(data.voteTalliesByGroup).every(
-        (groupName: string) => typeof groupName === "string"
-      ) &&
-        Array.isArray(Object.values(data.voteTalliesByGroup)) &&
-        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        Object.values(data.voteTalliesByGroup).every((voteTally: any) =>
-          isVoteTallyType(voteTally)
-        ))) &&
-    (!("topics" in data) || data.topics.every((topic: Topic) => isTopicType(topic)))
+    (!("voteTalliesByGroup" in data) || isVoteTallyByGroup(data.voteTalliesByGroup))
+  );
+}
+
+/**
+ * A text that has been categorized into at least one Topic.
+ */
+export interface CategorizedComment extends Partial<Comment> {
+  id: string;
+  topics: Topic[];
+}
+
+/**
+ * Checks if the data is a CategorizedComment object.
+ *
+ * It has the side effect of changing the type of the object to CategorizedComment if applicable.
+ *
+ * @param data - the object to check
+ * @returns - true if the object is a Comment
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+export function isCategorizedCommentType(data: any): data is CategorizedComment {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "topics" in data &&
+    "id" in data &&
+    typeof data.id === "string" &&
+    (!("text" in data) || typeof data.text === "string") &&
+    // Check that if voteTalliesByGroup dictionary exists all the keys are strings and values
+    // are VoteTally objects.
+    (!("voteTalliesByGroup" in data) || isVoteTallyByGroup(data.voteTalliesByGroup)) &&
+    data.topics.every((topic: Topic) => isTopicType(topic))
   );
 }
 

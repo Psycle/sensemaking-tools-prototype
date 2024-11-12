@@ -24,7 +24,7 @@ import {
   Schema,
   SchemaType,
 } from "@google-cloud/vertexai";
-import { Topic, Comment, isCommentType, isTopicType } from "../types";
+import { Topic, isTopicType, CategorizedComment, isCategorizedCommentType } from "../types";
 import { Model } from "./model";
 
 /**
@@ -106,11 +106,14 @@ export class VertexModel extends Model {
    * @param includeSubtopics when true both Topics and Subtopics will be found.
    * @returns a list of Comments which all contain at least one associated Topic.
    */
-  async generateComments(prompt: string, includeSubtopics: boolean): Promise<Comment[]> {
+  async generateCategorizedComments(
+    prompt: string,
+    includeSubtopics: boolean
+  ): Promise<CategorizedComment[]> {
     const model = includeSubtopics
       ? this.topicAndSubtopicCategorizationModel
       : this.topicCategorizationModel;
-    return generateCommentsWithModel(prompt, model);
+    return generateCategorizedCommentsWithModel(prompt, model);
   }
 }
 
@@ -264,22 +267,16 @@ function getRequest(prompt: string) {
  */
 // TODO: Restrict access to this function. It is intended to only be available for testing. It can
 // be made "protected" once it is a class method.
-export async function generateCommentsWithModel(
+export async function generateCategorizedCommentsWithModel(
   prompt: string,
   model: GenerativeModel
-): Promise<Comment[]> {
+): Promise<CategorizedComment[]> {
   const response = await generateJSON(prompt, model);
-  // TODO: reconsider this quick fix. The model is explicitly prompted to remove the text so that
-  // the output is shorter.
-  const comments = response.map((comment) => {
-    comment.text = comment.text || "";
-    return comment;
-  });
-  if (!comments.every((comment) => isCommentType(comment))) {
+  if (!response.every((response) => isCategorizedCommentType(response))) {
     // TODO: Add retry logic for this error.
     throw new Error("Model response comments are not all valid, response: " + response);
   }
-  return comments;
+  return response;
 }
 
 /**
