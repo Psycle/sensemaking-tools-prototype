@@ -69,6 +69,7 @@ export interface Comment {
   id: string;
   text: string;
   voteTalliesByGroup?: { [key: string]: VoteTally };
+  topics?: Topic[];
 }
 
 /**
@@ -105,38 +106,35 @@ export function isCommentType(data: any): data is Comment {
     typeof data.text === "string" &&
     // Check that if voteTalliesByGroup dictionary exists all the keys are strings and values
     // are VoteTally objects.
-    (!("voteTalliesByGroup" in data) || isVoteTallyByGroup(data.voteTalliesByGroup))
+    (!("voteTalliesByGroup" in data) || isVoteTallyByGroup(data.voteTalliesByGroup)) &&
+    (!("topics" in data) || data.topics.every((topic: Topic) => isTopicType(topic)))
   );
 }
 
 /**
- * A text that has been categorized into at least one Topic.
+ * A minimal representation of a categorized Comment.
  */
-export interface CategorizedComment extends Partial<Comment> {
+export interface CommentRecord {
   id: string;
   topics: Topic[];
 }
 
 /**
- * Checks if the data is a CategorizedComment object.
+ * Checks if the data is a CommentRecord object.
  *
- * It has the side effect of changing the type of the object to CategorizedComment if applicable.
+ * It has the side effect of changing the type of the object to CommentRecord if applicable.
  *
  * @param data - the object to check
  * @returns - true if the object is a Comment
  */
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-export function isCategorizedCommentType(data: any): data is CategorizedComment {
+export function isCommentRecordType(data: any): data is CommentRecord {
   return (
     typeof data === "object" &&
     data !== null &&
     "topics" in data &&
     "id" in data &&
     typeof data.id === "string" &&
-    (!("text" in data) || typeof data.text === "string") &&
-    // Check that if voteTalliesByGroup dictionary exists all the keys are strings and values
-    // are VoteTally objects.
-    (!("voteTalliesByGroup" in data) || isVoteTallyByGroup(data.voteTalliesByGroup)) &&
     data.topics.every((topic: Topic) => isTopicType(topic))
   );
 }

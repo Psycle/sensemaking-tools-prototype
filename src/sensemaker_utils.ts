@@ -14,6 +14,7 @@
 
 // Simple utils.
 
+import { CommentRecord, Comment } from "./types";
 /**
  * Combines the data and instructions into a prompt to send to Vertex.
  * @param instructions: what the model should do.
@@ -27,4 +28,31 @@ ${instructions}
 ${additionalInstructions ? "\nAdditional context:\n" + additionalInstructions + "\n" : ""}
 Comments:
 ${data.join("\n")}`; // separate comments with newlines
+}
+
+/**
+ * Converts the given commentRecords to Comments.
+ * @param commentRecords what to convert to Comments
+ * @param missingTexts the original comments with IDs match the commentRecords
+ * @returns a list of Comments with all possible fields from commentRecords.
+ */
+export function hydrateCommentRecord(
+  commentRecords: CommentRecord[],
+  missingTexts: Comment[]
+): Comment[] {
+  const inputCommentsLookup = new Map<string, Comment>(
+    missingTexts.map((comment: Comment) => [comment.id, comment])
+  );
+  return commentRecords
+    .map((commentRecord: CommentRecord): Comment | undefined => {
+      // Combine the matching Comment with the topics from the CommentRecord.
+      const comment = inputCommentsLookup.get(commentRecord.id);
+      if (comment) {
+        comment.topics = commentRecord.topics;
+      }
+      return comment;
+    })
+    .filter((comment: Comment | undefined): comment is Comment => {
+      return comment !== undefined;
+    });
 }

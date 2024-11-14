@@ -19,10 +19,10 @@
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "./models/vertex_model";
-import { CategorizedComment, Comment, SummarizationType, Topic } from "./types";
+import { CommentRecord, Comment, SummarizationType, Topic } from "./types";
 import { categorizeWithRetry, generateCategorizationPrompt } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
-import { getPrompt } from "./sensemaker_utils";
+import { getPrompt, hydrateCommentRecord } from "./sensemaker_utils";
 import { ModelSettings } from "./models/model";
 
 // Class to make sense of a deliberation. Uses LLMs to learn what topics were discussed and
@@ -113,7 +113,7 @@ export class Sensemaker {
     includeSubtopics: boolean,
     topics?: Topic[],
     additionalInstructions?: string
-  ): Promise<CategorizedComment[]> {
+  ): Promise<Comment[]> {
     if (!topics) {
       topics = await this.learnTopics(
         comments,
@@ -126,7 +126,7 @@ export class Sensemaker {
     const instructions = generateCategorizationPrompt(topics, includeSubtopics);
 
     // Call the model in batches, validate results and retry if needed.
-    const categorized: CategorizedComment[] = [];
+    const categorized: CommentRecord[] = [];
     for (
       let i = 0;
       i < comments.length;
@@ -147,8 +147,6 @@ export class Sensemaker {
       categorized.push(...categorizedBatch);
     }
 
-    // TODO: reconsider this format and if there's a desire to alternatively return this information
-    // grouped by Topic instead of grouped by Comment.
-    return categorized;
+    return hydrateCommentRecord(categorized, comments);
   }
 }

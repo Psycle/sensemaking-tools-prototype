@@ -24,7 +24,7 @@ import {
   Schema,
   SchemaType,
 } from "@google-cloud/vertexai";
-import { Topic, isTopicType, CategorizedComment, isCategorizedCommentType } from "../types";
+import { Topic, isTopicType, CommentRecord, isCommentRecordType } from "../types";
 import { Model } from "./model";
 
 /**
@@ -76,7 +76,7 @@ export class VertexModel extends Model {
    * @param model the model specification to use, by default it is unconstrained
    * @returns the model response as a string
    */
-  async executeRequest(prompt: string, model: GenerativeModel = this.baseModel): Promise<string> {
+  async generateText(prompt: string, model: GenerativeModel = this.baseModel): Promise<string> {
     const req = getRequest(prompt);
     const streamingResp = await model.generateContentStream(req);
 
@@ -106,14 +106,14 @@ export class VertexModel extends Model {
    * @param includeSubtopics when true both Topics and Subtopics will be found.
    * @returns a list of Comments which all contain at least one associated Topic.
    */
-  async generateCategorizedComments(
+  async generateCommentRecords(
     prompt: string,
     includeSubtopics: boolean
-  ): Promise<CategorizedComment[]> {
+  ): Promise<CommentRecord[]> {
     const model = includeSubtopics
       ? this.topicAndSubtopicCategorizationModel
       : this.topicCategorizationModel;
-    return generateCategorizedCommentsWithModel(prompt, model);
+    return generateCommentRecordsWithModel(prompt, model);
   }
 }
 
@@ -267,12 +267,12 @@ function getRequest(prompt: string) {
  */
 // TODO: Restrict access to this function. It is intended to only be available for testing. It can
 // be made "protected" once it is a class method.
-export async function generateCategorizedCommentsWithModel(
+export async function generateCommentRecordsWithModel(
   prompt: string,
   model: GenerativeModel
-): Promise<CategorizedComment[]> {
+): Promise<CommentRecord[]> {
   const response = await generateJSON(prompt, model);
-  if (!response.every((response) => isCategorizedCommentType(response))) {
+  if (!response.every((response) => isCommentRecordType(response))) {
     // TODO: Add retry logic for this error.
     throw new Error("Model response comments are not all valid, response: " + response);
   }

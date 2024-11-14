@@ -16,20 +16,20 @@ import { VertexModel } from "../models/vertex_model";
 import { formatCitations, groundSummary } from "./grounding";
 
 // Mock the model response. This mock needs to be set up to return response specific for each test.
-let mockExecuteRequest: jest.SpyInstance;
+let mockgenerateText: jest.SpyInstance;
 const mockModel = new VertexModel("project", "location", "gemini-1000");
 
-function mockExecuteRequestSequence(responses: string[]) {
-  responses.forEach((response) => mockExecuteRequest.mockReturnValueOnce(response));
+function mockgenerateTextSequence(responses: string[]) {
+  responses.forEach((response) => mockgenerateText.mockReturnValueOnce(response));
 }
 
 describe("grounding test", () => {
   beforeEach(() => {
-    mockExecuteRequest = jest.spyOn(VertexModel.prototype, "executeRequest");
+    mockgenerateText = jest.spyOn(VertexModel.prototype, "generateText");
   });
 
   afterEach(() => {
-    mockExecuteRequest.mockRestore();
+    mockgenerateText.mockRestore();
   });
 
   describe("markdown link formatter", () => {
@@ -84,10 +84,10 @@ describe("grounding test", () => {
       ];
       const expectedOutput = `This is a great summary.[[1](## "I like cats")]`;
       // Install the mocks and run the grounding
-      mockExecuteRequestSequence(responseSequence);
+      mockgenerateTextSequence(responseSequence);
       const groundedSummary = await groundSummary(mockModel, inputSummary, comments);
       expect(groundedSummary).toEqual(expectedOutput);
-      expect(mockExecuteRequest).toHaveBeenCalledTimes(responseSequence.length);
+      expect(mockgenerateText).toHaveBeenCalledTimes(responseSequence.length);
     });
   });
 });

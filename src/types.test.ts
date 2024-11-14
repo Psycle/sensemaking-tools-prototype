@@ -17,7 +17,7 @@ import {
   isTopicType,
   isVoteTallyType,
   isCommentType,
-  isCategorizedCommentType,
+  isCommentRecordType,
 } from "./types";
 
 describe("Types Test", () => {
@@ -59,26 +59,18 @@ describe("Types Test", () => {
     ).toBeFalsy();
   });
 
-  it("Valid CategorizedComment should pass isCategorizedCommentType", () => {
-    expect(isCategorizedCommentType({ id: "123", topics: [] })).toBeTruthy();
-    expect(
-      isCategorizedCommentType({
-        id: "123",
-        text: "hello",
-        topics: [],
-        voteTalliesByGroup: { "group 1": { agreeCount: 1, disagreeCount: 2 } },
-      })
-    ).toBeTruthy();
+  it("Valid CommentRecord should pass isCommentRecordType", () => {
+    expect(isCommentRecordType({ id: "123", topics: [] })).toBeTruthy();
   });
 
-  it("Invalid CategorizedComment should fail isCategorizedCommentType", () => {
+  it("Invalid CommentRecord should fail isCommentRecordType", () => {
     // ID is required.
-    expect(isCategorizedCommentType({ topics: [{ name: "Healthcare" }] })).toBeFalsy();
+    expect(isCommentRecordType({ topics: [{ name: "Healthcare" }] })).toBeFalsy();
     // ID must be of type string.
-    expect(isCategorizedCommentType({ id: 1, topics: [{ name: "Healthcare" }] })).toBeFalsy();
+    expect(isCommentRecordType({ id: 1, topics: [{ name: "Healthcare" }] })).toBeFalsy();
     // Topics must be valid, the second one is missing a name.
     expect(
-      isCategorizedCommentType({
+      isCommentRecordType({
         id: 1,
         topics: [{ name: "Healthcare" }, { subtopics: { name: "Public Parks" } }],
       })

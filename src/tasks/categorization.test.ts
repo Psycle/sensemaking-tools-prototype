@@ -13,14 +13,13 @@
 // limitations under the License.
 
 import {
-  addMissingTextToCategorizedComments,
   findMissingComments,
   generateCategorizationPrompt,
-  groupCommentsByTopic,
-  validateCategorizedComments,
+  validateCommentRecords,
   categorizeWithRetry,
+  groupCommentsByTopic,
 } from "./categorization";
-import { CategorizedComment, Comment, Topic } from "../types";
+import { CommentRecord, Comment, Topic } from "../types";
 import { VertexModel } from "../models/vertex_model";
 
 // Mock the model response. This mock needs to be set up to return response specific for each test.
@@ -29,7 +28,7 @@ let mockGenerateTopics: jest.SpyInstance;
 
 describe("CategorizationTest", () => {
   beforeEach(() => {
-    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateCategorizedComments");
+    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateCommentRecords");
     mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
   });
 
@@ -69,7 +68,7 @@ describe("CategorizationTest", () => {
       .mockReturnValueOnce(Promise.resolve([]))
       .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
-    const categorizedComments = await categorizeWithRetry(
+    const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
@@ -78,7 +77,7 @@ describe("CategorizationTest", () => {
     );
 
     expect(mockGenerateComments).toHaveBeenCalledTimes(2);
-    expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+    expect(commentRecords).toEqual(commentsWithTextAndTopics);
   });
 
   it("should retry categorization with some missing comments", async () => {
@@ -115,7 +114,7 @@ describe("CategorizationTest", () => {
         Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
       );
 
-    const categorizedComments = await categorizeWithRetry(
+    const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
@@ -124,7 +123,7 @@ describe("CategorizationTest", () => {
     );
 
     expect(mockGenerateComments).toHaveBeenCalledTimes(2);
-    expect(categorizedComments).toEqual(commentsWithTextAndTopics);
+    expect(commentRecords).toEqual(commentsWithTextAndTopics);
   });
 
   it('should assign "Other" topic and "Uncategorized" subtopic to comments that failed categorization after max retries', async () => {
@@ -142,7 +141,7 @@ describe("CategorizationTest", () => {
     // categorization failure.
     mockGenerateComments.mockReturnValue(Promise.resolve([]));
 
-    const categorizedComments = await categorizeWithRetry(
+    const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
@@ -169,7 +168,7 @@ describe("CategorizationTest", () => {
         topics: [{ name: "Other", subtopics: [{ name: "Uncategorized" }] }],
       },
     ];
-    expect(categorizedComments).toEqual(expected);
+    expect(commentRecords).toEqual(expected);
   });
 
   it('should assign "Other" topic to comments that failed categorization after max retries', async () => {
@@ -187,7 +186,7 @@ describe("CategorizationTest", () => {
     // categorization failure.
     mockGenerateComments.mockReturnValue(Promise.resolve([]));
 
-    const categorizedComments = await categorizeWithRetry(
+    const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
       instructions,
       comments,
@@ -215,7 +214,7 @@ describe("CategorizationTest", () => {
       },
     ];
 
-    expect(categorizedComments).toEqual(expected);
+    expect(commentRecords).toEqual(expected);
   });
 
   it("should generate a 1-level categorization prompt (topics only)", () => {
@@ -249,57 +248,7 @@ describe("CategorizationTest", () => {
   });
 });
 
-describe("addMissingTextToCategorizedComments", () => {
-  it("should add missing text to categorized comments", () => {
-    const inputCommentsLookup = new Map<string, Comment>([
-      ["1", { id: "1", text: "This is comment 1" }],
-      ["2", { id: "2", text: "This is comment 2" }],
-    ]);
-    const categorizedComments: CategorizedComment[] = [
-      { id: "1", text: "hi", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "2", text: "hello", topics: [{ name: "Topic 2", subtopics: [] }] },
-    ];
-
-    const result = addMissingTextToCategorizedComments(categorizedComments, inputCommentsLookup);
-
-    expect(result).toEqual([
-      {
-        id: "1",
-        text: "This is comment 1",
-        topics: [{ name: "Topic 1", subtopics: [] }],
-      },
-      {
-        id: "2",
-        text: "This is comment 2",
-        topics: [{ name: "Topic 2", subtopics: [] }],
-      },
-    ]);
-  });
-
-  it("should handle missing comments in the lookup map", () => {
-    const inputCommentsLookup = new Map<string, Comment>([
-      ["1", { id: "1", text: "This is comment 1" }],
-      // Comment with ID '2' is missing from the lookup map
-    ]);
-    const categorizedComments = [
-      { id: "1", topics: [{ name: "Topic 1", subtopics: [] }] },
-      { id: "2", topics: [{ name: "Topic 2", subtopics: [] }] },
-    ];
-
-    const result = addMissingTextToCategorizedComments(categorizedComments, inputCommentsLookup);
-
-    expect(result).toEqual([
-      {
-        id: "1",
-        text: "This is comment 1",
-        topics: [{ name: "Topic 1", subtopics: [] }],
-      },
-      { id: "2", topics: [{ name: "Topic 2", subtopics: [] }] }, // 'text' property should not be added
-    ]);
-  });
-});
-
-describe("validateCategorizedComments", () => {
+describe("validateCommentRecord", () => {
   const inputComments: Comment[] = [
     { id: "1", text: "Comment 1" },
     { id: "2", text: "Comment 2" },
@@ -311,20 +260,18 @@ describe("validateCategorizedComments", () => {
   ];
 
   it("should return all comments as valid with correct input", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Subtopic 2" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -334,25 +281,22 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out extra comments", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Subtopic 2" }] }],
       },
       {
         id: "3",
-        text: "Extra comment",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -362,16 +306,15 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out comments with empty topics", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
-      { id: "2", text: "Comment 2", topics: [] },
+      { id: "2", topics: [] },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -381,20 +324,18 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out comments with empty subtopics", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -404,20 +345,18 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out comments with invalid topic names", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Invalid Topic", subtopics: [{ name: "Subtopic 2" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -427,10 +366,9 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out a comment with one valid and one invalid topic name", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [
           { name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] },
           { name: "Invalid Topic", subtopics: [{ name: "Subtopic 2" }] },
@@ -438,12 +376,11 @@ describe("validateCategorizedComments", () => {
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Subtopic 2" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -453,20 +390,18 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out comments with invalid subtopic names", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Topic 1", subtopics: [{ name: "Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Invalid Subtopic" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -476,10 +411,9 @@ describe("validateCategorizedComments", () => {
   });
 
   it("should filter out a comment with one valid and one invalid subtopic name", () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [
           {
             name: "Topic 1",
@@ -489,12 +423,11 @@ describe("validateCategorizedComments", () => {
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Subtopic 2" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -504,20 +437,18 @@ describe("validateCategorizedComments", () => {
   });
 
   it('should allow "Other" as a valid topic or subtopic name', () => {
-    const categorizedComments: CategorizedComment[] = [
+    const commentRecords: CommentRecord[] = [
       {
         id: "1",
-        text: "Comment 1",
         topics: [{ name: "Other", subtopics: [{ name: "Other Subtopic 1" }] }],
       },
       {
         id: "2",
-        text: "Comment 2",
         topics: [{ name: "Topic 2", subtopics: [{ name: "Other" }] }],
       },
     ];
-    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-      categorizedComments,
+    const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+      commentRecords,
       inputComments,
       true,
       topics
@@ -529,26 +460,26 @@ describe("validateCategorizedComments", () => {
 
 describe("findMissingComments", () => {
   it("should return an empty array when all comments are present", () => {
-    const categorizedComments: CategorizedComment[] = [
-      { id: "1", text: "Comment 1", topics: [] },
-      { id: "2", text: "Comment 2", topics: [] },
+    const commentRecords: CommentRecord[] = [
+      { id: "1", topics: [] },
+      { id: "2", topics: [] },
     ];
     const inputComments: Comment[] = [
       { id: "1", text: "Comment 1" },
       { id: "2", text: "Comment 2" },
     ];
-    const missingComments = findMissingComments(categorizedComments, inputComments);
+    const missingComments = findMissingComments(commentRecords, inputComments);
     expect(missingComments).toEqual([]);
   });
 
   it("should return missing comments when some are not present", () => {
-    const categorizedComments: CategorizedComment[] = [{ id: "1", text: "Comment 1", topics: [] }];
+    const commentRecords: CommentRecord[] = [{ id: "1", topics: [] }];
     const inputComments: Comment[] = [
       { id: "1", text: "Comment 1" },
       { id: "2", text: "Comment 2" },
       { id: "3", text: "Comment 3" },
     ];
-    const missingComments = findMissingComments(categorizedComments, inputComments);
+    const missingComments = findMissingComments(commentRecords, inputComments);
     expect(missingComments).toEqual([
       { id: "2", text: "Comment 2" },
       { id: "3", text: "Comment 3" },
@@ -556,72 +487,72 @@ describe("findMissingComments", () => {
   });
 
   it("should return all comments when none are present", () => {
-    const categorizedComments: CategorizedComment[] = [];
+    const commentRecords: CommentRecord[] = [];
     const inputComments: Comment[] = [
       { id: "1", text: "Comment 1" },
       { id: "2", text: "Comment 2" },
     ];
-    const missingComments = findMissingComments(categorizedComments, inputComments);
+    const missingComments = findMissingComments(commentRecords, inputComments);
     expect(missingComments).toEqual([
       { id: "1", text: "Comment 1" },
       { id: "2", text: "Comment 2" },
     ]);
   });
-});
 
-describe("groupCommentsByTopic", () => {
-  it("should group comments by topic and subtopic", () => {
-    const categorizedComments: CategorizedComment[] = [
-      {
-        id: "1",
-        text: "Comment 1",
-        topics: [
-          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
-          { name: "Topic 2", subtopics: [{ name: "Subtopic 2.1" }] },
-        ],
-      },
-      {
-        id: "2",
-        text: "Comment 2",
-        topics: [
-          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
-          { name: "Topic 1", subtopics: [{ name: "Subtopic 1.2" }] },
-        ],
-      },
-    ];
-
-    const expectedOutput = {
-      "Topic 1": {
-        "Subtopic 1.1": {
-          "1": "Comment 1",
-          "2": "Comment 2",
+  describe("groupCommentsByTopic", () => {
+    it("should group comments by topic and subtopic", () => {
+      const categorizedComments: Comment[] = [
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [
+            { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
+            { name: "Topic 2", subtopics: [{ name: "Subtopic 2.1" }] },
+          ],
         },
-        "Subtopic 1.2": {
-          "2": "Comment 2",
+        {
+          id: "2",
+          text: "Comment 2",
+          topics: [
+            { name: "Topic 1", subtopics: [{ name: "Subtopic 1.1" }] },
+            { name: "Topic 1", subtopics: [{ name: "Subtopic 1.2" }] },
+          ],
         },
-      },
-      "Topic 2": {
-        "Subtopic 2.1": {
-          "1": "Comment 1",
+      ];
+
+      const expectedOutput = {
+        "Topic 1": {
+          "Subtopic 1.1": {
+            "1": "Comment 1",
+            "2": "Comment 2",
+          },
+          "Subtopic 1.2": {
+            "2": "Comment 2",
+          },
         },
-      },
-    };
+        "Topic 2": {
+          "Subtopic 2.1": {
+            "1": "Comment 1",
+          },
+        },
+      };
 
-    const result = groupCommentsByTopic(categorizedComments);
-    expect(JSON.parse(result)).toEqual(expectedOutput);
-  });
+      const result = groupCommentsByTopic(categorizedComments);
+      expect(JSON.parse(result)).toEqual(expectedOutput);
+    });
 
-  it("should throw an error if a comment has no topics", () => {
-    const categorizedComments: CategorizedComment[] = [
-      {
-        id: "1",
-        text: "Comment 1",
-        topics: [], // No topics assigned
-      },
-    ];
+    it("should throw an error if a comment has no topics", () => {
+      const categorizedComments: Comment[] = [
+        {
+          id: "1",
+          text: "Comment 1",
+          topics: [], // No topics assigned
+        },
+      ];
 
-    expect(() => groupCommentsByTopic(categorizedComments)).toThrow(
-      "Comment with ID 1 has no topics assigned."
-    );
+      expect(() => groupCommentsByTopic(categorizedComments)).toThrow(
+        "Comment with ID 1 has no topics assigned."
+      );
+    });
   });
 });

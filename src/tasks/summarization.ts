@@ -34,7 +34,7 @@ export async function basicSummarize(
   additionalInstructions?: string
 ): Promise<string> {
   const commentTexts = comments.map((comment) => comment.text);
-  return await model.executeRequest(
+  return await model.generateText(
     getPrompt(DEFAULT_INSTRUCTIONS, commentTexts, additionalInstructions)
   );
 }
@@ -63,7 +63,7 @@ export async function voteTallySummarize(
   model: Model,
   additionalInstructions?: string
 ): Promise<string> {
-  return await model.executeRequest(
+  return await model.generateText(
     getPrompt(DEFAULT_INSTRUCTIONS, formatCommentsWithVotes(commentData), additionalInstructions)
   );
 }

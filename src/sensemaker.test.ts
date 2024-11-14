@@ -21,18 +21,18 @@ const TEST_MODEL_SETTINGS: ModelSettings = {
   defaultModel: new VertexModel("project", "location", "Gemma1234"),
 };
 // Mock the model response. This mock needs to be set up to return response specific for each test.
-let mockGenerateComments: jest.SpyInstance;
+let mockGenerateCommentRecords: jest.SpyInstance;
 let mockGenerateTopics: jest.SpyInstance;
 
 describe("SensemakerTest", () => {
   beforeEach(() => {
-    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateCategorizedComments");
+    mockGenerateCommentRecords = jest.spyOn(VertexModel.prototype, "generateCommentRecords");
     mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
   });
 
   afterEach(() => {
     mockGenerateTopics.mockRestore();
-    mockGenerateComments.mockRestore();
+    mockGenerateCommentRecords.mockRestore();
   });
 
   describe("CategorizeTest", () => {
@@ -43,12 +43,11 @@ describe("SensemakerTest", () => {
       ];
       const topics = [{ name: "Topic 1" }];
       const includeSubtopics = false;
-      mockGenerateComments
+      mockGenerateCommentRecords
         .mockReturnValueOnce(
           Promise.resolve([
             {
               id: "1",
-              text: "Comment 1",
               topics: [{ name: "Topic 1" }],
             },
           ])
@@ -57,20 +56,19 @@ describe("SensemakerTest", () => {
           Promise.resolve([
             {
               id: "2",
-              text: "Comment 2",
               topics: [{ name: "Topic 1" }],
             },
           ])
         );
 
-      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).categorizeComments(
+      const actualComments = await new Sensemaker(TEST_MODEL_SETTINGS).categorizeComments(
         comments,
         includeSubtopics,
         topics,
         undefined
       );
 
-      expect(mockGenerateComments).toHaveBeenCalledTimes(2);
+      expect(mockGenerateCommentRecords).toHaveBeenCalledTimes(2);
 
       // Assert that the categorized comments are correct
       const expected = [
@@ -85,7 +83,7 @@ describe("SensemakerTest", () => {
           topics: [{ name: "Topic 1" }],
         },
       ];
-      expect(categorizedComments).toEqual(expected);
+      expect(actualComments).toEqual(expected);
     });
   });
 
@@ -127,14 +125,14 @@ describe("SensemakerTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
+      const commentRecords = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
         comments,
         includeSubtopics,
         topics
       );
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(validResponse);
+      expect(commentRecords).toEqual(validResponse);
     });
 
     it("should retry topic modeling when a new topic is added", async () => {
@@ -178,14 +176,14 @@ describe("SensemakerTest", () => {
         )
         .mockReturnValueOnce(Promise.resolve(validResponse));
 
-      const categorizedComments = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
+      const commentRecords = await new Sensemaker(TEST_MODEL_SETTINGS).learnTopics(
         comments,
         includeSubtopics,
         topics
       );
 
       expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
-      expect(categorizedComments).toEqual(validResponse);
+      expect(commentRecords).toEqual(validResponse);
     });
   });
 });

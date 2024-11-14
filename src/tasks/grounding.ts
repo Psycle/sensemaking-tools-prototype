@@ -250,20 +250,20 @@ export async function groundSummary(
   // Run each of the grounding prompts in turn, to produce a final grounded summary.
   console.log("\n## Initiating grounding routine");
   // Identify and demarcate claims.
-  const identifyClaimsResult = await model.executeRequest(identifyClaimsPrompt(summary));
+  const identifyClaimsResult = await model.generateText(identifyClaimsPrompt(summary));
   diffLogger("## Initial statement tagging:", summary, identifyClaimsResult);
   // Assign initial grounding citations.
-  const assignGroundingResult = await model.executeRequest(
+  const assignGroundingResult = await model.generateText(
     assignGroundingPrompt(identifyClaimsResult, comments)
   );
   diffLogger("## Initial statement grounding:", identifyClaimsResult, assignGroundingResult);
   // Verify the grounding citations.
-  const verifyGroundingResult = await model.executeRequest(
+  const verifyGroundingResult = await model.generateText(
     verifyGroundingPrompt(assignGroundingResult, comments)
   );
   diffLogger("## Grounding verification step:", assignGroundingResult, verifyGroundingResult);
   // Finalize the grounding by unverified claims.
-  const finalGroundingResult = await model.executeRequest(
+  const finalGroundingResult = await model.generateText(
     finalizeGroundingPrompt(verifyGroundingResult)
   );
   diffLogger("## Final grounding results:", verifyGroundingResult, finalGroundingResult);

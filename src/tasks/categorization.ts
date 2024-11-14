@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { CategorizedComment, Comment, Topic } from "../types";
+import { CommentRecord, Comment, Topic } from "../types";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "../models/vertex_model";
 import { Model } from "../models/model";
-import { getPrompt } from "../sensemaker_utils";
+import { getPrompt, hydrateCommentRecord } from "../sensemaker_utils";
 
 /**
  * @fileoverview Helper functions for performing comments categorization.
@@ -37,14 +37,10 @@ export async function categorizeWithRetry(
   includeSubtopics: boolean,
   topics: Topic[],
   additionalInstructions?: string
-): Promise<CategorizedComment[]> {
+): Promise<CommentRecord[]> {
   // a holder for uncategorized comments: first - input comments, later - any failed ones that need to be retried
   let uncategorized: Comment[] = [...inputComments];
-  let categorized: CategorizedComment[] = [];
-  // Lookup map to get comments by ID (a LLM returns IDs only, this is used to pull the text to build a proper Comment)
-  const inputCommentsLookup = new Map<string, Comment>(
-    inputComments.map((comment) => [comment.id, comment])
-  );
+  let categorized: CommentRecord[] = [];
 
   for (let attempts = 1; attempts <= MAX_RETRIES; attempts++) {
     // convert JSON to string representation that will be sent to the model
@@ -52,24 +48,19 @@ export async function categorizeWithRetry(
       JSON.stringify({ id: comment.id, text: comment.text })
     );
 
-    const newCategorized: CategorizedComment[] = await model.generateCategorizedComments(
+    const newCategorized: CommentRecord[] = await model.generateCommentRecords(
       getPrompt(instructions, uncategorizedCommentsForModel, additionalInstructions),
       includeSubtopics
     );
-    // Add missing 'text' properties to the result using the lookup map, so we can cast to Comment type that requires text.
-    const newCategorizedComments: CategorizedComment[] = addMissingTextToCategorizedComments(
-      newCategorized,
-      inputCommentsLookup
-    );
 
     const newProcessedComments = processCategorizedComments(
-      newCategorizedComments,
+      newCategorized,
       inputComments,
       uncategorized,
       includeSubtopics,
       topics
     );
-    categorized = categorized.concat(newProcessedComments.categorizedComments);
+    categorized = categorized.concat(newProcessedComments.commentRecords);
     uncategorized = newProcessedComments.uncategorizedComments;
 
     if (uncategorized.length === 0) {
@@ -142,31 +133,31 @@ export function generateCategorizationPrompt(topics: Topic[], includeSubtopics: 
  *  - Extra comments (not present in the original input)
  *  - Empty topics or subtopics
  *  - Invalid topic or subtopic names
- * @param categorizedComments The categorized comments to validate.
+ * @param commentRecords The categorized comments to validate.
  * @param inputComments The original input comments.
  * @param includeSubtopics Whether to include subtopics in the categorization.
  * @param topics The topics and subtopics provided to the LLM for categorization.
  * @returns An object containing:
- *  - `validCategorizedComments`: comments that passed validation.
+ *  - `validCommentRecords`: comments that passed validation.
  *  - `commentsWithInvalidTopics`: comments that failed validation.
  */
-export function validateCategorizedComments(
-  categorizedComments: CategorizedComment[],
+export function validateCommentRecords(
+  commentRecords: CommentRecord[],
   inputComments: Comment[],
   includeSubtopics: boolean,
   topics: Topic[]
 ): {
-  commentsPassedValidation: CategorizedComment[];
-  commentsWithInvalidTopics: CategorizedComment[];
+  commentsPassedValidation: CommentRecord[];
+  commentsWithInvalidTopics: CommentRecord[];
 } {
-  const commentsPassedValidation: CategorizedComment[] = [];
-  const commentsWithInvalidTopics: CategorizedComment[] = [];
+  const commentsPassedValidation: CommentRecord[] = [];
+  const commentsWithInvalidTopics: CommentRecord[] = [];
   // put all input comment ids together for output ids validation
-  const inputCommentIds: string[] = inputComments.map((comment) => comment.id);
+  const inputCommentIds = new Set<string>(inputComments.map((comment) => comment.id));
   // topic -> subtopics lookup for naming validation
   const topicLookup: Record<string, string[]> = createTopicLookup(topics);
 
-  categorizedComments.forEach((comment) => {
+  commentRecords.forEach((comment) => {
     if (isExtraComment(comment, inputCommentIds)) {
       return; // Skip to the next comment
     }
@@ -210,8 +201,8 @@ function createTopicLookup(inputTopics: Topic[]): Record<string, string[]> {
  * @param inputCommentIds An array of IDs of the original input comments.
  * @returns True if the comment is extra, false otherwise.
  */
-function isExtraComment(comment: Comment | CategorizedComment, inputCommentIds: string[]): boolean {
-  if (!inputCommentIds.includes(comment.id)) {
+function isExtraComment(comment: Comment | CommentRecord, inputCommentIds: Set<string>): boolean {
+  if (!inputCommentIds.has(comment.id)) {
     console.warn(`Extra comment in model's response: ${JSON.stringify(comment)}`);
     return true;
   }
@@ -224,10 +215,7 @@ function isExtraComment(comment: Comment | CategorizedComment, inputCommentIds: 
  * @param includeSubtopics Whether to include subtopics in the categorization.
  * @returns True if the comment has empty topics or subtopics, false otherwise.
  */
-function hasEmptyTopicsOrSubtopics(
-  comment: CategorizedComment,
-  includeSubtopics: boolean
-): boolean {
+function hasEmptyTopicsOrSubtopics(comment: CommentRecord, includeSubtopics: boolean): boolean {
   if (comment.topics.length === 0) {
     console.warn(`Comment with empty topics: ${JSON.stringify(comment)}`);
     return true;
@@ -250,7 +238,7 @@ function hasEmptyTopicsOrSubtopics(
  * @returns True if the comment has invalid topic or subtopic names, false otherwise.
  */
 function hasInvalidTopicNames(
-  comment: CategorizedComment,
+  comment: CommentRecord,
   includeSubtopics: boolean,
   inputTopics: Record<string, string[]>
 ): boolean {
@@ -302,47 +290,23 @@ function areSubtopicsValid(
 
 /**
  * Finds comments that are missing from the categorized output.
- * @param categorizedComments The categorized comments received from the model.
+ * @param commentRecords The categorized comments received from the model.
  * @param uncategorized The current set of uncategorized comments to check if any are missing in the model response.
  * @returns An array of comments that were present in the input, but not in categorized.
  */
 export function findMissingComments(
-  categorizedComments: CategorizedComment[],
+  commentRecords: CommentRecord[],
   uncategorized: Comment[]
 ): Comment[] {
-  const categorizedCommentIds: string[] = categorizedComments.map((comment) => comment.id);
+  const commentRecordIds: string[] = commentRecords.map((comment) => comment.id);
   const missingComments = uncategorized.filter(
-    (uncategorizedComment) => !categorizedCommentIds.includes(uncategorizedComment.id)
+    (uncommentRecord) => !commentRecordIds.includes(uncommentRecord.id)
   );
 
   if (missingComments.length > 0) {
     console.warn(`Missing comments in model's response: ${JSON.stringify(missingComments)}`);
   }
   return missingComments;
-}
-
-/**
- * Adds the missing 'text' property to categorized comments using a lookup map.
- * This is necessary because the LLM returns only IDs, and we need the original text.
- *
- * @param categorizedComments The categorized comments received from the model (missing the 'text' property).
- * @param inputCommentsLookup A map to look up the original input comments by their ID.
- * @returns An array of CategorizedComment objects with the 'text' property added.
- */
-export function addMissingTextToCategorizedComments(
-  categorizedComments: CategorizedComment[],
-  inputCommentsLookup: Map<string, Comment>
-): CategorizedComment[] {
-  categorizedComments.forEach((categorizedComment: CategorizedComment) => {
-    const inputComment = inputCommentsLookup.get(categorizedComment.id);
-    if (inputComment) {
-      categorizedComment.text = inputComment.text;
-    } else {
-      // This may happen if model returned a comment id that was not in the input. We filter such comments on the later steps.
-      console.warn(`Could not find input comment for ID ${categorizedComment.id}`);
-    }
-  });
-  return categorizedComments;
 }
 
 /**
@@ -363,6 +327,79 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
   }
 }
 
+/**
+ * Processes the categorized comments, validating them and updating the categorized and uncategorized arrays.
+ *
+ * @param commentRecords The newly categorized comments from the LLM.
+ * @param inputComments The original input comments.
+ * @param uncategorized The current set of uncategorized comments to check if any are missing in the model response.
+ * @param includeSubtopics Whether to include subtopics in the categorization.
+ * @param topics The topics and subtopics provided to the LLM for categorization.
+ * @returns The successfully categorized comments and the unsuccessfully categorized comments with
+ * the topics removed.
+ */
+function processCategorizedComments(
+  commentRecords: CommentRecord[],
+  inputComments: Comment[],
+  uncategorized: Comment[],
+  includeSubtopics: boolean,
+  topics: Topic[]
+): {
+  commentRecords: CommentRecord[];
+  uncategorizedComments: Comment[];
+} {
+  // Check for comments that were never in the input, have no topics, or non-matching topic names.
+  const { commentsPassedValidation, commentsWithInvalidTopics } = validateCommentRecords(
+    commentRecords,
+    inputComments,
+    includeSubtopics,
+    topics
+  );
+
+  // Check for comments completely missing in the model's response
+  const missingComments: Comment[] = findMissingComments(commentRecords, uncategorized);
+  // Remove invalid topics from comments to prepare for retry.
+  let invalidComments = hydrateCommentRecord(commentsWithInvalidTopics, inputComments);
+  invalidComments = invalidComments.map((comment: Comment): Comment => {
+    comment.topics = undefined;
+    return comment;
+  });
+  // Combine all invalid comments for retry
+  return {
+    commentRecords: commentsPassedValidation,
+    uncategorizedComments: [...missingComments, ...invalidComments],
+  };
+}
+
+/**
+ * Assigns the default "Other" topic and optionally "Uncategorized" subtopic to comments that
+ * failed categorization.
+ *
+ * @param uncategorized The array of comments that failed categorization.
+ * @param includeSubtopics whether to include the default subtopic
+ * @returns the uncategorized comments now categorized into a "Other" category.
+ */
+function assignDefaultCategory(
+  uncategorized: Comment[],
+  includeSubtopics: boolean
+): CommentRecord[] {
+  console.warn(
+    `Failed to categorize ${uncategorized.length} comments after maximum number of retries. Assigning "Other" topic and "Uncategorized" subtopic to failed comments.`
+  );
+  console.warn("Uncategorized comments:", JSON.stringify(uncategorized));
+  return uncategorized.map((comment: Comment): CommentRecord => {
+    return {
+      ...comment,
+      topics: [
+        {
+          name: "Other",
+          subtopics: includeSubtopics ? [{ name: "Uncategorized" }] : undefined,
+        },
+      ],
+    };
+  });
+}
+
 // TODO: Reconsider how this feature should be used, it is currently unused, but there has been
 // desire in the past to group by Topics instead of Comments (like to assist with deduplication).
 /**
@@ -381,7 +418,7 @@ export function parseTopicsJson(topicsJsonString: string): Topic[] {
  *   }
  * }
  */
-export function groupCommentsByTopic(categorized: CategorizedComment[]): string {
+export function groupCommentsByTopic(categorized: Comment[]): string {
   const commentsByTopics: {
     [topicName: string]: {
       [subtopicName: string]: { [commentId: string]: string };
@@ -404,96 +441,4 @@ export function groupCommentsByTopic(categorized: CategorizedComment[]): string 
     }
   }
   return JSON.stringify(commentsByTopics, null, 2);
-}
-
-/**
- * Converts the given categorizedComments to Comments.
- * @param categorizedComments what to convert to Comments
- * @param missingTexts the original comments with IDs match the categorizedComments
- * @returns a list of Comments with all possible fields from categorizedComments.
- */
-function convertToComments(
-  categorizedComments: CategorizedComment[],
-  missingTexts: Comment[]
-): Comment[] {
-  const inputCommentsLookup = new Map<string, Comment>(
-    missingTexts.map((comment: Comment) => [comment.id, comment])
-  );
-  return categorizedComments
-    .map((categorizedComment: CategorizedComment): Comment | undefined => {
-      return inputCommentsLookup.get(categorizedComment.id);
-    })
-    .filter((comment: Comment | undefined): comment is Comment => {
-      return comment !== undefined;
-    });
-}
-
-/**
- * Processes the categorized comments, validating them and updating the categorized and uncategorized arrays.
- *
- * @param categorizedComments The newly categorized comments from the LLM.
- * @param inputComments The original input comments.
- * @param uncategorized The current set of uncategorized comments to check if any are missing in the model response.
- * @param includeSubtopics Whether to include subtopics in the categorization.
- * @param topics The topics and subtopics provided to the LLM for categorization.
- * @returns The successfully categorized comments and the unsuccessfully categorized comments with
- * the topics removed.
- */
-function processCategorizedComments(
-  categorizedComments: CategorizedComment[],
-  inputComments: Comment[],
-  uncategorized: Comment[],
-  includeSubtopics: boolean,
-  topics: Topic[]
-): {
-  categorizedComments: CategorizedComment[];
-  uncategorizedComments: Comment[];
-} {
-  // Check for comments that were never in the input, have no topics, or non-matching topic names.
-  const { commentsPassedValidation, commentsWithInvalidTopics } = validateCategorizedComments(
-    categorizedComments,
-    inputComments,
-    includeSubtopics,
-    topics
-  );
-
-  // Check for comments completely missing in the model's response
-  const missingComments: Comment[] = findMissingComments(categorizedComments, uncategorized);
-  // Combine all invalid comments for retry
-  return {
-    categorizedComments: commentsPassedValidation,
-    uncategorizedComments: [
-      ...missingComments,
-      ...convertToComments(commentsWithInvalidTopics, inputComments),
-    ],
-  };
-}
-
-/**
- * Assigns the default "Other" topic and optionally "Uncategorized" subtopic to comments that
- * failed categorization.
- *
- * @param uncategorized The array of comments that failed categorization.
- * @param includeSubtopics whether to include the default subtopic
- * @returns the uncategorized comments now categorized into a "Other" category.
- */
-function assignDefaultCategory(
-  uncategorized: Comment[],
-  includeSubtopics: boolean
-): CategorizedComment[] {
-  console.warn(
-    `Failed to categorize ${uncategorized.length} comments after maximum number of retries. Assigning "Other" topic and "Uncategorized" subtopic to failed comments.`
-  );
-  console.warn("Uncategorized comments:", JSON.stringify(uncategorized));
-  return uncategorized.map((comment: Comment): CategorizedComment => {
-    return {
-      ...comment,
-      topics: [
-        {
-          name: "Other",
-          subtopics: includeSubtopics ? [{ name: "Uncategorized" }] : undefined,
-        },
-      ],
-    };
-  });
 }

@@ -16,7 +16,7 @@
 // will inherit this class and provide a concrete implementations that follow this structure. Then
 // different models and model providers can be easily swapped in and out.
 
-import { Topic, CategorizedComment } from "../types";
+import { Topic, CommentRecord } from "../types";
 
 // Specify which model will be called for different tasks. The tradeoff between speed and quality
 // may be different for different modeling tasks.
@@ -37,7 +37,7 @@ export abstract class Model {
    * @param prompt - what information and instructions are given to the model.
    * @returns the model response
    */
-  abstract executeRequest(prompt: string): Promise<string>;
+  abstract generateText(prompt: string): Promise<string>;
 
   /**
    * Defines topics based on the information in the given prompt.
@@ -54,8 +54,8 @@ export abstract class Model {
    * @param includeSubtopics - whether to include another layer of categorization under topics
    * @returns the given comments sorted into the given topics and optionally subtopics.
    */
-  abstract generateCategorizedComments(
+  abstract generateCommentRecords(
     prompt: string,
     includeSubtopics: boolean
-  ): Promise<CategorizedComment[]>;
+  ): Promise<CommentRecord[]>;
 }
