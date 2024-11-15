@@ -20,12 +20,13 @@ import {
   HarmBlockThreshold,
   HarmCategory,
   ModelParams,
-  VertexAI,
   Schema,
   SchemaType,
+  VertexAI,
 } from "@google-cloud/vertexai";
-import { Topic, isTopicType, CommentRecord, isCommentRecordType } from "../types";
+import { CommentRecord, isCommentRecordType, isTopicType, Summary, Topic } from "../types";
 import { Model } from "./model";
+import { parseStringIntoSummary } from "../tasks/grounding";
 
 /**
  * Class to interact with models available through Google Cloud's Model Garden.
@@ -87,6 +88,16 @@ export class VertexModel extends Model {
       console.warn("Malformed response: ", response);
       throw new Error("Error from Generative Model, response: " + response);
     }
+  }
+
+  /**
+   * Generates a summary based on the provided prompt.
+   * @param prompt The input prompt containing instructions and data for summarization.
+   * @returns the generated summary based on the given information
+   */
+  async generateSummary(prompt: string): Promise<Summary> {
+    // TODO: replace it with `groundSummary` call once we figure out how to hydrate comments
+    return parseStringIntoSummary(await this.generateText(prompt, this.baseModel));
   }
 
   /**

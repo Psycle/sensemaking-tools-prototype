@@ -16,7 +16,7 @@
 // will inherit this class and provide a concrete implementations that follow this structure. Then
 // different models and model providers can be easily swapped in and out.
 
-import { Topic, CommentRecord } from "../types";
+import { Topic, CommentRecord, Summary } from "../types";
 
 // Specify which model will be called for different tasks. The tradeoff between speed and quality
 // may be different for different modeling tasks.
@@ -38,6 +38,13 @@ export abstract class Model {
    * @returns the model response
    */
   abstract generateText(prompt: string): Promise<string>;
+
+  /**
+   * Generates a summary based on the provided prompt.
+   * @param prompt The input prompt containing instructions and data for summarization.
+   * @returns the generated summary based on the given information
+   */
+  abstract generateSummary(prompt: string): Promise<Summary>;
 
   /**
    * Defines topics based on the information in the given prompt.

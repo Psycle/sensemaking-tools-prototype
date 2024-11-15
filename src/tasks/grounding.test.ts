@@ -13,7 +13,8 @@
 // limitations under the License.
 
 import { VertexModel } from "../models/vertex_model";
-import { formatCitations, groundSummary } from "./grounding";
+import { formatCitations, groundSummary, parseStringIntoSummary } from "./grounding";
+import { SummaryChunk } from "../types";
 
 // Mock the model response. This mock needs to be set up to return response specific for each test.
 let mockgenerateText: jest.SpyInstance;
@@ -66,28 +67,56 @@ describe("grounding test", () => {
   });
 
   describe("summarization grounding", () => {
-    it("should format markdown links correctly", async () => {
-      const inputSummary = "This is a great summary. This one not so much.";
+    it("should format markdown correctly", async () => {
+      const inputSummary = "This is a filler text. This is a grounded claim. This one not so much.";
       // Here we mock out the entire sequence of model responses that might result from such a summary grounding.
       // In theory, it would be fine to only mock the final return value (to return every time), but it's helpful
       // to see what the intermediate responses look like, and will be more future proof if additional processing ends
       // up happening between these steps.
       const responseSequence = [
-        "[[This is a great summary.]]^[] [[This one not so much.]]^[]",
-        "[[This is a great summary.]]^[1,2] [[This one not so much.]]^[1]",
-        "[[This is a great summary.]]^[1] [[This one not so much.]]^[]",
-        "This is a great summary.[1]",
+        "This is a filler text. [[This is a grounded claim.]]^[] [[This one not so much.]]^[]",
+        "This is a filler text. [[This is a grounded claim.]]^[id1,id2] [[This one not so much.]]^[id2]",
+        "This is a filler text. [[This is a grounded claim.]]^[id1] [[This one not so much.]]^[]",
+        "This is a filler text. [[This is a grounded claim.]]^[id1]",
       ];
       const comments = [
-        { id: "1", text: "I like cats" },
-        { id: "2", text: "I don't like cats" },
+        { id: "id1", text: "A comment backing up the claim" },
+        { id: "id2", text: "A comment that might look related but not really" },
       ];
-      const expectedOutput = `This is a great summary.[[1](## "I like cats")]`;
+      const expectedOutput = `This is a filler text. This is a grounded claim.[id1]`;
       // Install the mocks and run the grounding
       mockgenerateTextSequence(responseSequence);
       const groundedSummary = await groundSummary(mockModel, inputSummary, comments);
-      expect(groundedSummary).toEqual(expectedOutput);
+      expect(groundedSummary.getText("MARKDOWN")).toEqual(expectedOutput);
       expect(mockgenerateText).toHaveBeenCalledTimes(responseSequence.length);
+    });
+  });
+
+  describe("string to summary parsing", () => {
+    it("should parse a string with grounded claims into an array of SummaryChunks", async () => {
+      const groundingResult = `This is a filler text.
+[[Grounded [[inception]] claim...]]^[id1] [[Deeply, fully grounded claim.]]^[id2,id3][[Claim with no space in front]]^[id4,id5,id6]
+Finally, this is another filler text.`;
+      const expectedChunks: SummaryChunk[] = [
+        { text: "This is a filler text.\n" },
+        {
+          text: "Grounded [[inception]] claim...",
+          representativeCommentIds: ["id1"],
+        },
+        { text: " " },
+        {
+          text: "Deeply, fully grounded claim.",
+          representativeCommentIds: ["id2", "id3"],
+        },
+        {
+          text: "Claim with no space in front",
+          representativeCommentIds: ["id4", "id5", "id6"],
+        },
+        { text: "\nFinally, this is another filler text." },
+      ];
+
+      const summary = await parseStringIntoSummary(groundingResult);
+      expect(summary.chunks).toEqual(expectedChunks);
     });
   });
 });

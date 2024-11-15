@@ -15,7 +15,7 @@
 // Functions for different ways to summarize Comment and Vote data.
 
 import { Model } from "../models/model";
-import { Comment } from "../types";
+import { Comment, Summary } from "../types";
 import { getPrompt } from "../sensemaker_utils";
 
 const DEFAULT_INSTRUCTIONS = `Please summarize the public's perspective in relation to the comments submitted, making sure to 
@@ -32,9 +32,9 @@ export async function basicSummarize(
   comments: Comment[],
   model: Model,
   additionalInstructions?: string
-): Promise<string> {
+): Promise<Summary> {
   const commentTexts = comments.map((comment) => comment.text);
-  return await model.generateText(
+  return await model.generateSummary(
     getPrompt(DEFAULT_INSTRUCTIONS, commentTexts, additionalInstructions)
   );
 }
@@ -62,8 +62,8 @@ export async function voteTallySummarize(
   commentData: Comment[],
   model: Model,
   additionalInstructions?: string
-): Promise<string> {
-  return await model.generateText(
+): Promise<Summary> {
+  return await model.generateSummary(
     getPrompt(DEFAULT_INSTRUCTIONS, formatCommentsWithVotes(commentData), additionalInstructions)
   );
 }

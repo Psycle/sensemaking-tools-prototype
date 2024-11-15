@@ -14,7 +14,7 @@
 
 // Routines for grounding summarization results in source comments and vote data, to ensure accuracy.
 
-import { Comment } from "../types";
+import { Comment, Summary, SummaryChunk } from "../types";
 import { Model } from "../models/model";
 
 function formatComments(comments: Comment[]): string {
@@ -128,10 +128,6 @@ if no comments have been identified as grounding the statement.
 
 Your job: for each statement in the summary that has been so marked, if there are no comments that have been found to ground the statement, then remove the statement from the summary, and if necessary, adjust the surrounding text to that it makes sense without the removed statement.
 
-As you go, you can remove the [[]]^ that surround these statements, but leave brackets for any comment ids that have been found to ground the statements. So for the first example above, you would replace with:
-
-    a claim that needs to be grounded.[3,5,10]
-
 THIS IS IMPORTANT!
 Leave in any portion of text from the original summary that does not need to be grounded and is not invalidated by the removal of a claim. The overall structure of the summary text should not change, and all text, punctuation, indentation and aspects of markdown notation should be left as is, unless they have become unecessary due to the removal of text as described above.
 
@@ -179,18 +175,22 @@ function commentCitation(comment: Comment): string {
  * @returns the markdown summary
  */
 export function formatCitations(comments: Comment[], summary: string): string {
-  // Regex for capturing all of the ^[n, m] annotations from the summary (post grounding).
+  // Regex for capturing all the ^[n,m] citation annotations from the summary (post grounding).
   const groundingCitationRegex = /\[([\d,\s]+)\]/g;
   // Create a mapping of comment ids to comment records.
   const commentIndex = comments.reduce((acc, curr) => acc.set(curr.id, curr), new Map());
-  // Find every match of groundingCitationRegex and replace with f(match).
+
+  // Find every match of citation annotations and replace cited comment ids with markdown links.
   const summaryWithLinks = summary.replace(groundingCitationRegex, (_, match: string): string => {
     // Extract the individual comment ids from the match.
     const commentIds = match.split(/,\s*/);
     // Map to markdown links that display the comment text and vote patterns when you hover over.
     const mdLinks = commentIds.map((commentId) => commentCitation(commentIndex.get(commentId)));
+
     return "[" + mdLinks.join(",") + "]";
   });
+  // For debugging, add commentTable for searching comments that might have been removed at previous steps.
+  //return summaryWithLinks + commentTable(comments);
   return summaryWithLinks;
 }
 
@@ -235,6 +235,82 @@ function diffLogger(header: string, summary1: string, summary2: string): void {
 }
 
 /**
+ * Parses a string containing claim annotations into a `Summary` object.
+ *
+ * This function takes a string that represents a summary with embedded claim annotations
+ * and converts it into a structured `Summary` object.  The annotations are expected to
+ * be in the format `[[claim]]^[comment_id1,comment_id2,...]`.
+ *
+ * @param groundingResult The input string containing the summary with claim annotations.
+ * @returns A `Summary` object representing the parsed summary.
+ *
+ * @example
+ * For input summary:
+ * "This is a filler text. [[This is the first claim.]]^[id1,id2] [[This is the second.]]^[id3]"
+ *
+ * The resulting 'summary' object will be:
+ * {
+ *   chunks: [
+ *     { text: "This is a filler text. " },
+ *     {
+ *       text: "This is the first claim.",
+ *       representativeCommentIds: ["id1", "id2"],
+ *     },
+ *     { text: " " },
+ *     {
+ *       text: "This is the second.",
+ *       representativeCommentIds: ["id3"],
+ *     },
+ *   ],
+ * }
+ */
+export async function parseStringIntoSummary(groundingResult: string): Promise<Summary> {
+  // Regex for citation annotations like: "[[This is a grounded claim.]]^[id1,id2]"
+  const groundingCitationRegex = /\[\[(.*?)]]\^\[(.*?)]/g;
+  // The regex repeatedly splits summary into segments of 3 groups appended next to each other:
+  // 1. filler text, 2. claim (without brackets), 3 comment ids (without brackets)
+  //
+  // For example, this summary:
+  //  This is a filler text.
+  //  [[Grounded claim...]]^[id1] [[Deeply, fully grounded claim.]]^[id2,id3][[Claim with no space in front]]^[id4,id5,id6]
+  //  Finally, this is another filler text.
+  //
+  // will be split into:
+  // [
+  //   'This is a filler text.\n',
+  //   'Grounded claim...',
+  //   'id1',
+  //   ' ',
+  //   'Deeply, fully grounded claim.',
+  //   'id2,id3',
+  //   '',
+  //   'Claim with no space in front',
+  //   'id4,id5,id6',
+  //   '\nFinally, this is another filler text.'
+  // ]
+  const parts = groundingResult.split(groundingCitationRegex);
+  const chunks: SummaryChunk[] = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] !== "") {
+      // Add filler text, if not empty (in case two claims have no space in between)
+      chunks.push({ text: parts[i] });
+    }
+
+    if (i < parts.length - 2) {
+      const claim = parts[i + 1];
+      const commentIds = parts[i + 2].split(",");
+      chunks.push({
+        text: claim,
+        representativeCommentIds: commentIds,
+      });
+      i += 2; // bypass processed claim and comment ids elements
+    }
+  }
+  return new Summary(chunks);
+}
+
+/**
  * Analyze the summary for claims that should be grounded in comment data, identify comments
  * that accomplish this grounding objective, verify these grounding assignments, and remove claims
  * that fail grounding.
@@ -246,7 +322,7 @@ export async function groundSummary(
   model: Model,
   summary: string,
   comments: Comment[]
-): Promise<string> {
+): Promise<Summary> {
   // Run each of the grounding prompts in turn, to produce a final grounded summary.
   console.log("\n## Initiating grounding routine");
   // Identify and demarcate claims.
@@ -267,8 +343,6 @@ export async function groundSummary(
     finalizeGroundingPrompt(verifyGroundingResult)
   );
   diffLogger("## Final grounding results:", verifyGroundingResult, finalGroundingResult);
-  // Apply citation tooltips as markdown.
-  return formatCitations(comments, finalGroundingResult);
-  // For debugging, add commentTable for searching comments that might have been removed at previous steps.
-  //return formatCitations(comments, finalGroundingResult) + commentTable(comments);
+
+  return parseStringIntoSummary(finalGroundingResult);
 }

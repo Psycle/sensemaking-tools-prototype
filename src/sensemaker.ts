@@ -19,7 +19,7 @@
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "./models/vertex_model";
-import { CommentRecord, Comment, SummarizationType, Topic } from "./types";
+import { CommentRecord, Comment, SummarizationType, Summary, Topic } from "./types";
 import { categorizeWithRetry, generateCategorizationPrompt } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
 import { getPrompt, hydrateCommentRecord } from "./sensemaker_utils";
@@ -45,14 +45,14 @@ export class Sensemaker {
    * @param summarizationType what summarization method to use
    * @param topics the set of topics that should be present in the final summary
    * @param additionalInstructions additional context to give the model as part of the prompt
-   * @returns a summary of the information as a string.
+   * @returns a summary of the information.
    */
   public async summarize(
     comments: Comment[],
     summarizationType: SummarizationType = SummarizationType.VOTE_TALLY,
     topics?: Topic[],
     additionalInstructions?: string
-  ): Promise<string> {
+  ): Promise<Summary> {
     if (summarizationType == SummarizationType.BASIC) {
       return basicSummarize(comments, this.modelSettings.defaultModel, additionalInstructions);
     } else if (summarizationType == SummarizationType.VOTE_TALLY) {

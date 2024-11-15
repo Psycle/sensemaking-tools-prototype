@@ -23,6 +23,101 @@ export enum SummarizationType {
 }
 
 /**
+ * Represents a portion of a summary, optionally linked to representative comments.
+ */
+export interface SummaryChunk {
+  /**
+   * The text content of this chunk of the summary.
+   */
+  text: string;
+
+  /**
+   * An optional array of comment IDs that are representative of this chunk.
+   * These IDs can be used for grounding and providing context.
+   * Could be empty for fluffy/connecting text (e.g., ", and also" between two verifiable points).
+   */
+  representativeCommentIds?: string[];
+}
+
+/**
+ * Specifies the format for citations within a summary.
+ *
+ * XML includes ID only, MARKDOWN includes text and votes as well.
+ *
+ * EXAMPLES:
+ *
+ * Input chunks:
+ *  - "Members of Group A want cleaner parks." with comment IDs [123, 345]
+ *  - " However, they disagree..." with comment ID [678]
+ *  - " and others favoring..." with comment ID [912]
+ *
+ * Output (XML format):
+ *  Members of Group A want cleaner parks.<citation comment_id=123><citation comment_id=345>
+ *   However, they disagree...<citation comment_id=678>
+ *   and others favoring...<citation comment_id=912>
+ *
+ * Output (MARKDOWN format):
+ *  Members of Group A want cleaner parks.[[123](## "I want a cleaner park\nvotes: group-1(A=15, D=2, P=3)")[[345](## "Clean parks are essential.\nvotes: group-2(A=10, D=5)")]
+ *   However, they disagree...[[678](## "More trash cans would help.\nvotes: group-1(A=20, D=1)")]
+ *   and others favoring...[[912](## "Littering fines are the solution.\nvotes: group-2(A=12, D=3, P=2)")]
+ */
+export type CitationFormat = "XML" | "MARKDOWN";
+
+/**
+ * Represents a summary composed of multiple chunks.
+ * If a chunk contains a claim, it should be grounded by representative comments.
+ */
+export class Summary {
+  /**
+   * An array of SummaryChunk objects, each representing a part of the summary.
+   */
+  chunks: SummaryChunk[];
+
+  constructor(chunks: SummaryChunk[]) {
+    this.chunks = chunks;
+  }
+
+  /**
+   * Returns the text of the summary, formatted according to the specified citation format.
+   * @param format The desired format for citations. Can be "XML" or "MARKDOWN".
+   * @returns The formatted summary text.  Throws an error if an unsupported format is provided.
+   */
+  getText(format: CitationFormat): string {
+    let result = "";
+
+    switch (format) {
+      case "XML":
+        for (const chunk of this.chunks) {
+          result += `${chunk.text}`;
+          if (chunk.representativeCommentIds) {
+            for (const id of chunk.representativeCommentIds) {
+              result += `<citation comment_id=${id}>`;
+            }
+          }
+        }
+        break;
+
+      case "MARKDOWN":
+        for (const chunk of this.chunks) {
+          result += `${chunk.text}`;
+          if (chunk.representativeCommentIds) {
+            result += `[${chunk.representativeCommentIds.join(",")}]`;
+          }
+        }
+        // TODO: replace this with Chris' implementation that has comment text and vote tallies
+        // Apply citation tooltips as markdown.
+        // result = formatCitations(comments, this.chunks)
+        break;
+
+      default:
+        throw new Error(`Unsupported citation type: ${format}`);
+    }
+
+    return result;
+  }
+}
+
+/**
  * Aggregates a number of individual votes.
  */
 export class VoteTally {

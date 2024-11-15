@@ -18,6 +18,9 @@ import {
   isVoteTallyType,
   isCommentType,
   isCommentRecordType,
+  Summary,
+  SummaryChunk,
+  CitationFormat,
 } from "./types";
 
 describe("Types Test", () => {
@@ -92,5 +95,33 @@ describe("Types Test", () => {
     expect(
       isTopicType({ name: "Test Topic", subtopics: [{ name: "Test Subtopic" }, {}] })
     ).toBeFalsy();
+  });
+
+  describe("Summary", () => {
+    describe("getText", () => {
+      const chunks: SummaryChunk[] = [
+        { text: "Claim 1 text", representativeCommentIds: ["id1", "id2"] },
+        { text: " " }, // Filler text
+        { text: "Claim 2 text.", representativeCommentIds: ["id3"] },
+        { text: " Filler text" },
+      ];
+      const summary = new Summary(chunks);
+
+      it("should return XML formatted summary", () => {
+        const expectedXML = `Claim 1 text<citation comment_id=id1><citation comment_id=id2> Claim 2 text.<citation comment_id=id3> Filler text`;
+        expect(summary.getText("XML")).toBe(expectedXML);
+      });
+
+      it("should return MARKDOWN formatted summary", () => {
+        const expectedMarkdown = "Claim 1 text[id1,id2] Claim 2 text.[id3] Filler text";
+        expect(summary.getText("MARKDOWN")).toBe(expectedMarkdown);
+      });
+
+      it("should throw an error for unsupported format", () => {
+        expect(() => summary.getText("UNSUPPORTED" as CitationFormat)).toThrow(
+          "Unsupported citation type: UNSUPPORTED"
+        );
+      });
+    });
   });
 });
