@@ -115,7 +115,7 @@ Finally, this is another filler text.`;
         { text: "\nFinally, this is another filler text." },
       ];
 
-      const summary = await parseStringIntoSummary(groundingResult);
+      const summary = await parseStringIntoSummary(groundingResult, []);
       expect(summary.chunks).toEqual(expectedChunks);
     });
   });

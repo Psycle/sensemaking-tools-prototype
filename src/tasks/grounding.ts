@@ -160,7 +160,7 @@ function voteTallySummary(comment: Comment): string {
  * @returns the summary as a string
  */
 function commentCitation(comment: Comment): string {
-  const base = `[${comment.id}](## "${comment.text}`;
+  const base = `[${comment.id}](## "${comment.text.replace('"', "'").replace("\n", " ")}`;
   if (comment.voteTalliesByGroup) {
     return base + `\n${voteTallySummary(comment)}")`;
   } else {
@@ -264,7 +264,10 @@ function diffLogger(header: string, summary1: string, summary2: string): void {
  *   ],
  * }
  */
-export async function parseStringIntoSummary(groundingResult: string): Promise<Summary> {
+export async function parseStringIntoSummary(
+  groundingResult: string,
+  comments: Comment[]
+): Promise<Summary> {
   // Regex for citation annotations like: "[[This is a grounded claim.]]^[id1,id2]"
   const groundingCitationRegex = /\[\[(.*?)]]\^\[(.*?)]/g;
   // The regex repeatedly splits summary into segments of 3 groups appended next to each other:
@@ -307,7 +310,7 @@ export async function parseStringIntoSummary(groundingResult: string): Promise<S
       i += 2; // bypass processed claim and comment ids elements
     }
   }
-  return new Summary(chunks);
+  return new Summary(chunks, comments);
 }
 
 /**
@@ -344,5 +347,5 @@ export async function groundSummary(
   );
   diffLogger("## Final grounding results:", verifyGroundingResult, finalGroundingResult);
 
-  return parseStringIntoSummary(finalGroundingResult);
+  return parseStringIntoSummary(finalGroundingResult, comments);
 }

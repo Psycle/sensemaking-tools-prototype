@@ -12,7 +12,85 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A module to define the types used in this library.
+// This module defines a set a data types used throughout the library. These types are specified using
+// TypeBox, which allows us to simultaneously generate TypeScript types for the codebase, together with
+// JSON Schema specifications, useful for VertexAI/Gemini constrained decoding, as well as for data
+// validation routines.
+
+import { Type, TSchema, type Static } from "@sinclair/typebox";
+import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
+import { formatCitations } from "./tasks/grounding";
+
+/**
+ * TypeBox JSON Schema representation of a single topic record as a name, with no subtopics.
+ */
+export const FlatTopic = Type.Object({
+  name: Type.String(),
+});
+
+/**
+ * Type representation of a single topic record as a name, with no subtopics.
+ */
+export type FlatTopic = Static<typeof FlatTopic>;
+
+/**
+ * TypeBox JSON Schema representation of a topic record as a name, with flat subtopics.
+ */
+export const NestedTopic = Type.Object({
+  name: Type.String(),
+  subtopics: Type.Array(FlatTopic),
+});
+
+/**
+ * Type representation of a topic record as a name, with flat subtopics.
+ */
+export type NestedTopic = Static<typeof NestedTopic>;
+
+/**
+ * TypeBox JSON Schema representation of an abstract topic, either with or without subtopics.
+ */
+export const Topic = Type.Union([FlatTopic, NestedTopic]);
+
+/**
+ * Type representation of an abstract topic, either with or without subtopics.
+ */
+export type Topic = Static<typeof Topic>;
+
+/**
+ * TypeBox JSON Schema representation of a comment id, together with a list of associated topics.
+ */
+export const TopicCategorizedComment = Type.Object({
+  id: Type.String(),
+  topics: Type.Array(FlatTopic),
+});
+
+/**
+ * Type representation of a comment id, together with a list of associated topics.
+ */
+export type TopicCategorizedComment = Static<typeof TopicCategorizedComment>;
+
+/**
+ * TypeBox JSON Schema representation of a comment id, together with a list of associated topics and subtopics.
+ */
+export const SubtopicCategorizedComment = Type.Object({
+  id: Type.String(),
+  topics: Type.Array(NestedTopic),
+});
+
+/**
+ * Type representation of a comment id, together with a list of associated topics and subtopics.
+ */
+export type SubtopicCategorizedComment = Static<typeof SubtopicCategorizedComment>;
+
+/**
+ * TypeBox JSON Schema representation of a comment id, together with a list of associated topics and possibly subtopics.
+ */
+export const CommentRecord = Type.Union([TopicCategorizedComment, SubtopicCategorizedComment]);
+
+/**
+ * Type representation of a comment id, together with a list of associated topics and possibly subtopics.
+ */
+export type CommentRecord = Static<typeof CommentRecord>;
 
 /**
  * Describes the type of summarization to use.
@@ -72,9 +150,11 @@ export class Summary {
    * An array of SummaryChunk objects, each representing a part of the summary.
    */
   chunks: SummaryChunk[];
+  comments: Comment[];
 
-  constructor(chunks: SummaryChunk[]) {
+  constructor(chunks: SummaryChunk[], comments: Comment[]) {
     this.chunks = chunks;
+    this.comments = comments;
   }
 
   /**
@@ -104,8 +184,8 @@ export class Summary {
             result += `[${chunk.representativeCommentIds.join(",")}]`;
           }
         }
-        // TODO: apply citation tooltips as markdown.
-        // result = formatCitations(comments, this.chunks)
+        // Apply citation tooltips as markdown.
+        result = formatCitations(this.comments, result);
         break;
 
       default:
@@ -206,15 +286,31 @@ export function isCommentType(data: any): data is Comment {
 }
 
 /**
- * A minimal representation of a categorized Comment.
+ * This is a local cache of compiled type/schema checkers. Checker compilation is not free, so
+ * we keep a cache of previously compiled checkers so that we can more efficiently run checks.
+ * Note that it's important here that this be a Map structure, for its specific value/identity
+ * semantic guarantees on the input spec value.
  */
-export interface CommentRecord {
-  id: string;
-  topics: Topic[];
+const schemaCheckerCache = new Map<TSchema, TypeCheck<TSchema>>();
+
+/**
+ * Check that the given data matches the corresponding TSchema specification. Caches type checking compilation.
+ * @param schema The schema to check by
+ * @param response The response to check
+ * @returns Boolean for whether or not the data matches the schema
+ */
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
+export function checkDataSchema(schema: TSchema, response: any): boolean {
+  let checker: TypeCheck<TSchema> | undefined = schemaCheckerCache.get(schema);
+  if (!checker) {
+    checker = TypeCompiler.Compile(schema);
+    schemaCheckerCache.set(schema, checker);
+  }
+  return checker.Check(response);
 }
 
 /**
- * Checks if the data is a CommentRecord object.
+ * Checks if the data is a CategorizedComment object.
  *
  * It has the side effect of changing the type of the object to CommentRecord if applicable.
  *
@@ -223,29 +319,7 @@ export interface CommentRecord {
  */
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 export function isCommentRecordType(data: any): data is CommentRecord {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "topics" in data &&
-    "id" in data &&
-    typeof data.id === "string" &&
-    data.topics.every((topic: Topic) => isTopicType(topic))
-  );
-}
-
-/**
- * A series of comments that were voted on.
- */
-export interface Conversation {
-  comments: Comment[];
-}
-
-/**
- * What is being discussed.
- */
-export interface Topic {
-  name: string;
-  subtopics?: Topic[];
+  return checkDataSchema(CommentRecord, data);
 }
 
 /**
@@ -258,12 +332,12 @@ export interface Topic {
  */
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 export function isTopicType(data: any): data is Topic {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "name" in data &&
-    typeof data.name === "string" &&
-    // Check that if subtopics exist they are all valid topics.
-    (!("subtopics" in data) || data.subtopics.every((subtopic: Topic) => isTopicType(subtopic)))
-  );
+  // This shouldn't be necessary, but checking directly against the union type seems to be ignoring
+  // empty subtopic objects. This fixes it, but should maybe be reported as a bug?
+  // TODO(ctsmall): Figure out why this is happening, and fix more optimally
+  if ("subtopics" in data) {
+    return checkDataSchema(NestedTopic, data);
+  } else {
+    return checkDataSchema(FlatTopic, data);
+  }
 }

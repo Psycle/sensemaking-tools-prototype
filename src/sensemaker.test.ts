@@ -21,18 +21,15 @@ const TEST_MODEL_SETTINGS: ModelSettings = {
   defaultModel: new VertexModel("project", "location", "Gemma1234"),
 };
 // Mock the model response. This mock needs to be set up to return response specific for each test.
-let mockGenerateCommentRecords: jest.SpyInstance;
-let mockGenerateTopics: jest.SpyInstance;
+let mockGenerateData: jest.SpyInstance;
 
 describe("SensemakerTest", () => {
   beforeEach(() => {
-    mockGenerateCommentRecords = jest.spyOn(VertexModel.prototype, "generateCommentRecords");
-    mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
+    mockGenerateData = jest.spyOn(VertexModel.prototype, "generateData");
   });
 
   afterEach(() => {
-    mockGenerateTopics.mockRestore();
-    mockGenerateCommentRecords.mockRestore();
+    mockGenerateData.mockRestore();
   });
 
   describe("CategorizeTest", () => {
@@ -43,7 +40,7 @@ describe("SensemakerTest", () => {
       ];
       const topics = [{ name: "Topic 1" }];
       const includeSubtopics = false;
-      mockGenerateCommentRecords
+      mockGenerateData
         .mockReturnValueOnce(
           Promise.resolve([
             {
@@ -68,7 +65,7 @@ describe("SensemakerTest", () => {
         undefined
       );
 
-      expect(mockGenerateCommentRecords).toHaveBeenCalledTimes(2);
+      expect(mockGenerateData).toHaveBeenCalledTimes(2);
 
       // Assert that the categorized comments are correct
       const expected = [
@@ -110,7 +107,7 @@ describe("SensemakerTest", () => {
 
       // Mock LLM call incorrectly returns a subtopic that matches and existing
       // topic at first, and then on retry returns a correct categorization.
-      mockGenerateTopics
+      mockGenerateData
         .mockReturnValueOnce(
           Promise.resolve([
             {
@@ -131,7 +128,7 @@ describe("SensemakerTest", () => {
         topics
       );
 
-      expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
+      expect(mockGenerateData).toHaveBeenCalledTimes(2);
       expect(commentRecords).toEqual(validResponse);
     });
 
@@ -157,7 +154,7 @@ describe("SensemakerTest", () => {
 
       // Mock LLM call returns an incorrectly added new topic at first, and then
       // is correct on retry.
-      mockGenerateTopics
+      mockGenerateData
         .mockReturnValueOnce(
           Promise.resolve([
             {
@@ -182,7 +179,7 @@ describe("SensemakerTest", () => {
         topics
       );
 
-      expect(mockGenerateTopics).toHaveBeenCalledTimes(2);
+      expect(mockGenerateData).toHaveBeenCalledTimes(2);
       expect(commentRecords).toEqual(validResponse);
     });
   });

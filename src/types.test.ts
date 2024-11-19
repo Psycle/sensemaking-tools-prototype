@@ -105,7 +105,7 @@ describe("Types Test", () => {
         { text: "Claim 2 text.", representativeCommentIds: ["id3"] },
         { text: " Filler text" },
       ];
-      const summary = new Summary(chunks);
+      const summary = new Summary(chunks, []);
 
       it("should return XML formatted summary", () => {
         const expectedXML = `Claim 1 text<citation comment_id=id1><citation comment_id=id2> Claim 2 text.<citation comment_id=id3> Filler text`;

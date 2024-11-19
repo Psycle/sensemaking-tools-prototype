@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { CommentRecord, Comment, Topic } from "../types";
+import { CommentRecord, Comment, Topic, NestedTopic, FlatTopic } from "../types";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "../models/vertex_model";
 import { Model } from "../models/model";
 import { getPrompt, hydrateCommentRecord } from "../sensemaker_utils";
+import { TSchema, Type } from "@sinclair/typebox";
 
 /**
  * @fileoverview Helper functions for performing comments categorization.
@@ -47,11 +48,11 @@ export async function categorizeWithRetry(
     const uncategorizedCommentsForModel: string[] = uncategorized.map((comment) =>
       JSON.stringify({ id: comment.id, text: comment.text })
     );
-
-    const newCategorized: CommentRecord[] = await model.generateCommentRecords(
+    const outputSchema: TSchema = Type.Array(includeSubtopics ? NestedTopic : FlatTopic);
+    const newCategorized: CommentRecord[] = (await model.generateData(
       getPrompt(instructions, uncategorizedCommentsForModel, additionalInstructions),
-      includeSubtopics
-    );
+      outputSchema
+    )) as CommentRecord[];
 
     const newProcessedComments = processCategorizedComments(
       newCategorized,
@@ -190,7 +191,11 @@ export function validateCommentRecords(
 function createTopicLookup(inputTopics: Topic[]): Record<string, string[]> {
   const lookup: Record<string, string[]> = {};
   for (const topic of inputTopics) {
-    lookup[topic.name] = topic.subtopics ? topic.subtopics.map((subtopic) => subtopic.name) : [];
+    if ("subtopics" in topic) {
+      lookup[topic.name] = topic.subtopics.map((subtopic) => subtopic.name);
+    } else {
+      lookup[topic.name] = [];
+    }
   }
   return lookup;
 }
@@ -222,7 +227,9 @@ function hasEmptyTopicsOrSubtopics(comment: CommentRecord, includeSubtopics: boo
   }
   if (
     includeSubtopics &&
-    comment.topics.some((topic) => !topic.subtopics || topic.subtopics.length === 0)
+    comment.topics.some(
+      (topic: Topic) => "subtopics" in topic && (!topic.subtopics || topic.subtopics.length === 0)
+    )
   ) {
     console.warn(`Comment with empty subtopics: ${JSON.stringify(comment)}`);
     return true;
@@ -243,7 +250,7 @@ function hasInvalidTopicNames(
   inputTopics: Record<string, string[]>
 ): boolean {
   // We use `some` here to return as soon as we find an invalid topic (or subtopic).
-  return comment.topics.some((topic) => {
+  return comment.topics.some((topic: Topic) => {
     if (topic.name === "Other") {
       return false; // "Other" topic can have any subtopic names - we can skip checking them.
     }
@@ -256,7 +263,7 @@ function hasInvalidTopicNames(
       return true; // Invalid topic found, stop checking and return `hasInvalidTopicNames` true for this comment.
     }
 
-    if (includeSubtopics && topic.subtopics) {
+    if (includeSubtopics && "subtopics" in topic) {
       const areAllSubtopicsValid = areSubtopicsValid(topic.subtopics, inputTopics[topic.name]);
       if (!areAllSubtopicsValid) {
         console.warn(
@@ -391,10 +398,9 @@ function assignDefaultCategory(
     return {
       ...comment,
       topics: [
-        {
-          name: "Other",
-          subtopics: includeSubtopics ? [{ name: "Uncategorized" }] : undefined,
-        },
+        includeSubtopics
+          ? ({ name: "Other", subtopics: [{ name: "Uncategorized" }] } as NestedTopic)
+          : ({ name: "Other" } as FlatTopic),
       ],
     };
   });
@@ -432,11 +438,13 @@ export function groupCommentsByTopic(categorized: Comment[]): string {
       if (!commentsByTopics[topic.name]) {
         commentsByTopics[topic.name] = {}; // init new topic name
       }
-      for (const subtopic of topic.subtopics || []) {
-        if (!commentsByTopics[topic.name][subtopic.name]) {
-          commentsByTopics[topic.name][subtopic.name] = {}; // init new subtopic name
+      if ("subtopics" in topic) {
+        for (const subtopic of topic.subtopics || []) {
+          if (!commentsByTopics[topic.name][subtopic.name]) {
+            commentsByTopics[topic.name][subtopic.name] = {}; // init new subtopic name
+          }
+          commentsByTopics[topic.name][subtopic.name][comment.id] = comment.text!;
         }
-        commentsByTopics[topic.name][subtopic.name][comment.id] = comment.text!;
       }
     }
   }

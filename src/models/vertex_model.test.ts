@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  generateCommentRecordsWithModel,
-  generateJSON,
-  generateTopicsWithModel,
-} from "./vertex_model";
-import { GenerativeModel } from "@google-cloud/vertexai";
-import { CommentRecord, Topic } from "../types";
+import { Type } from "@sinclair/typebox";
+import { generateJSON, VertexModel } from "./vertex_model";
 
 // Mock the VertexAI module - this mock will be used when the module is imported within a test run.
 jest.mock("@google-cloud/vertexai", () => {
@@ -50,19 +45,16 @@ function mockSingleModelResponse(generateContentStreamMock: jest.Mock, responseM
   );
 }
 
-describe("ModelTest", () => {
-  // if we can pass the model mock directly to the function where it's being called (instead of relying on import),
-  // then we don't need to use something like `jest.requireMock("@google-cloud/vertexai").generativeJsonModelMock`
-  const generativeJsonModelMock = {
-    generateContentStream: jest.fn(),
-  };
-  const generateContentStreamMock = generativeJsonModelMock.generateContentStream;
+describe("VertexAI test", () => {
+  const model = new VertexModel("my-project", "us-central1", "models/gemini-pro");
+  const { generateContentStreamMock } = jest.requireMock("@google-cloud/vertexai");
 
   beforeEach(() => {
     // Reset the mock before each test
     generateContentStreamMock.mockClear();
   });
 
+  // These tests are specifically for the VertexModel class logic, rather than the implementation logic of the VertexAI calls
   describe("generateContent", () => {
     it("should retry on rate limit error and return valid JSON", async () => {
       const expectedJSON = [{ result: "success" }];
@@ -75,10 +67,7 @@ describe("ModelTest", () => {
       // Mock the second call to return the expected JSON
       mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedJSON));
 
-      const result = await generateJSON(
-        "Some instructions",
-        generativeJsonModelMock as unknown as GenerativeModel
-      );
+      const result = await generateJSON("Some instructions", model.getGenerativeModel());
 
       // Assert that the mock was called twice (initial call + retry)
       expect(generateContentStreamMock).toHaveBeenCalledTimes(2);
@@ -87,35 +76,47 @@ describe("ModelTest", () => {
       expect(result).toEqual(expectedJSON);
     });
 
-    it("should generate valid topics", async () => {
-      const expectedTopics: Topic[] = [{ name: "Topic 1" }, { name: "Topic 2" }];
-      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedTopics));
+    it("should generate valid text", async () => {
+      const expectedText = "This is some text.";
+      mockSingleModelResponse(generateContentStreamMock, expectedText);
 
-      const result = await generateTopicsWithModel(
-        "Some instructions",
-        generativeJsonModelMock as unknown as GenerativeModel
-      );
+      const result = await model.generateText("Some instructions");
 
       expect(generateContentStreamMock).toHaveBeenCalledTimes(1);
 
-      expect(result).toEqual(expectedTopics);
+      expect(result).toEqual(expectedText);
     });
 
-    it("should generate valid comments", async () => {
-      const expectedComments: CommentRecord[] = [
-        { id: "1", topics: [{ name: "Topic 1" }] },
-        { id: "1", topics: [{ name: "Topic 1" }] },
-      ];
-      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedComments));
+    it("should generate valid structured data that matches the schema", async () => {
+      const expectedStructuredData = { key1: "value1", key2: 2 };
+      // the TypeBox spec:
+      const schema = Type.Object({
+        key1: Type.String(),
+        key2: Type.Number(),
+      });
 
-      const result = await generateCommentRecordsWithModel(
-        "Some instructions",
-        generativeJsonModelMock as unknown as GenerativeModel
-      );
+      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedStructuredData));
+
+      const result = await model.generateData("Some instructions", schema);
 
       expect(generateContentStreamMock).toHaveBeenCalledTimes(1);
 
-      expect(result).toEqual(expectedComments);
+      expect(result).toEqual(expectedStructuredData);
+    });
+
+    it("should throw an error when generated data does not match the schema", async () => {
+      const expectedStructuredData = { key1: 1, key2: "value2" };
+      // the TypeBox spec:
+      const schema = Type.Object({
+        key1: Type.String(),
+        key2: Type.Number(),
+      });
+
+      mockSingleModelResponse(generateContentStreamMock, JSON.stringify(expectedStructuredData));
+
+      await expect(async () => {
+        await model.generateData("Some instructions", schema);
+      }).rejects.toThrow("Model response does not match schema");
     });
   });
 });

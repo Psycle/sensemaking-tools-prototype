@@ -16,11 +16,21 @@
 
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "./models/vertex_model";
-import { CommentRecord, Comment, SummarizationType, Summary, Topic } from "./types";
+import {
+  CommentRecord,
+  Comment,
+  SummarizationType,
+  Summary,
+  FlatTopic,
+  NestedTopic,
+  Topic,
+} from "./types";
 import { categorizeWithRetry, generateCategorizationPrompt } from "./tasks/categorization";
 import { basicSummarize, voteTallySummarize } from "./tasks/summarization";
 import { getPrompt, hydrateCommentRecord } from "./sensemaker_utils";
-import { ModelSettings } from "./models/model";
+import { Type } from "@sinclair/typebox";
+import { ModelSettings, Model } from "./models/model";
+import { groundSummary } from "./tasks/grounding";
 
 // Class to make sense of a deliberation. Uses LLMs to learn what topics were discussed and
 // categorize comments. Then these categorized comments can be used with optional Vote data to
@@ -37,6 +47,17 @@ export class Sensemaker {
   }
 
   /**
+   * Get corresponding model from modelSettings object, or defaultModel if none specified.
+   * @param modelSetting the key of the modelSettings options you want the Model for (corresponding to task)
+   * @return The model to use for the corresponding ModelSetting key
+   */
+  getModel(modelSetting: keyof ModelSettings): Model {
+    // TODO(ctsmall): Consider getting rid of this function once we have non default model
+    // implementations, in case we want to switch to a static compilation of the correct model for each key.
+    return this.modelSettings[modelSetting] || this.modelSettings.defaultModel;
+  }
+
+  /**
    * Summarize a set of comments using all available metadata.
    * @param comments the text and (optional) vote data to consider
    * @param summarizationType what summarization method to use
@@ -50,13 +71,16 @@ export class Sensemaker {
     topics?: Topic[],
     additionalInstructions?: string
   ): Promise<Summary> {
+    let summary: string;
+    const model: Model = this.getModel("summarizationModel");
     if (summarizationType == SummarizationType.BASIC) {
-      return basicSummarize(comments, this.modelSettings.defaultModel, additionalInstructions);
+      summary = await basicSummarize(comments, model, additionalInstructions);
     } else if (summarizationType == SummarizationType.VOTE_TALLY) {
-      return voteTallySummarize(comments, this.modelSettings.defaultModel, additionalInstructions);
+      summary = await voteTallySummarize(comments, model, additionalInstructions);
     } else {
       throw TypeError("Unknown Summarization Type.");
     }
+    return groundSummary(this.getModel("groundingModel"), summary, comments);
   }
 
   /**
@@ -76,13 +100,16 @@ export class Sensemaker {
     additionalInstructions?: string
   ): Promise<Topic[]> {
     const instructions = generateTopicModelingPrompt(includeSubtopics, topics);
+
     // surround each comment by triple backticks to avoid model's confusion with single, double quotes and new lines
     const commentTexts = comments.map((comment) => "```" + comment.text + "```");
+    // decide which schema to use based on includeSubtopics
+    const schema = Type.Array(includeSubtopics ? NestedTopic : FlatTopic);
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      const response = await this.modelSettings.defaultModel.generateTopics(
+      const response = (await this.getModel("categorizationModel").generateData(
         getPrompt(instructions, commentTexts, additionalInstructions),
-        includeSubtopics
-      );
+        schema
+      )) as Topic[];
 
       if (learnedTopicsValid(response, topics)) {
         return response;

@@ -123,7 +123,8 @@ export function learnedTopicsValid(response: Topic[], parentTopics?: Topic[]): b
 
   // 2. Ensure no subtopic has the same name as any main topic.
   for (const topic of response) {
-    const subtopicNames = topic.subtopics ? topic.subtopics.map((subtopic) => subtopic.name) : [];
+    const subtopicNames =
+      "subtopics" in topic ? topic.subtopics.map((subtopic) => subtopic.name) : [];
     for (const subtopicName of subtopicNames) {
       if (topicNames.includes(subtopicName) && subtopicName !== "Other") {
         console.warn(

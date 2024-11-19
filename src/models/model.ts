@@ -16,7 +16,7 @@
 // will inherit this class and provide a concrete implementations that follow this structure. Then
 // different models and model providers can be easily swapped in and out.
 
-import { Topic, CommentRecord, Summary } from "../types";
+import { TSchema, type Static } from "@sinclair/typebox";
 
 // Specify which model will be called for different tasks. The tradeoff between speed and quality
 // may be different for different modeling tasks.
@@ -33,36 +33,17 @@ export abstract class Model {
   public readonly categorizationBatchSize = 100;
 
   /**
-   * A general call to the given model.
-   * @param prompt - what information and instructions are given to the model.
+   * Abstract method for generating a text response based on the given prompt.
+   * @param prompt - the instructions and data to process as a prompt
    * @returns the model response
    */
   abstract generateText(prompt: string): Promise<string>;
 
   /**
-   * Generates a summary based on the provided prompt.
-   * @param prompt The input prompt containing instructions and data for summarization.
-   * @returns the generated summary based on the given information
+   * Abstract method for generating structured data based on the given prompt.
+   * @param prompt - the instructions and data to process as a prompt
+   * @param schema - the schema to use for the structured data
+   * @returns the model response
    */
-  abstract generateSummary(prompt: string): Promise<Summary>;
-
-  /**
-   * Defines topics based on the information in the given prompt.
-   * @param prompt - the instructions and data to categorize into topics
-   * @param includeSubtopics - whether to include another layer of categorization under topics
-   * @returns the topics found in the given instructions
-   */
-  abstract generateTopics(prompt: string, includeSubtopics: boolean): Promise<Topic[]>;
-
-  /**
-   * Categorizes the data in the prompt into the given topics.
-   * @param prompt - includes instructions, comment data, and the topics to categorize the
-   * comments into.
-   * @param includeSubtopics - whether to include another layer of categorization under topics
-   * @returns the given comments sorted into the given topics and optionally subtopics.
-   */
-  abstract generateCommentRecords(
-    prompt: string,
-    includeSubtopics: boolean
-  ): Promise<CommentRecord[]>;
+  abstract generateData(prompt: string, schema: TSchema): Promise<Static<typeof schema>>;
 }

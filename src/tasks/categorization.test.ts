@@ -23,18 +23,15 @@ import { CommentRecord, Comment, Topic } from "../types";
 import { VertexModel } from "../models/vertex_model";
 
 // Mock the model response. This mock needs to be set up to return response specific for each test.
-let mockGenerateComments: jest.SpyInstance;
-let mockGenerateTopics: jest.SpyInstance;
+let mockGenerateData: jest.SpyInstance;
 
 describe("CategorizationTest", () => {
   beforeEach(() => {
-    mockGenerateComments = jest.spyOn(VertexModel.prototype, "generateCommentRecords");
-    mockGenerateTopics = jest.spyOn(VertexModel.prototype, "generateTopics");
+    mockGenerateData = jest.spyOn(VertexModel.prototype, "generateData");
   });
 
   afterEach(() => {
-    mockGenerateTopics.mockRestore();
-    mockGenerateComments.mockRestore();
+    mockGenerateData.mockRestore();
   });
   it("should retry categorization with all missing comments", async () => {
     const comments: Comment[] = [
@@ -64,7 +61,7 @@ describe("CategorizationTest", () => {
 
     // The first response is incorrectly missing all comments, and then
     // on retry the text is present.
-    mockGenerateComments
+    mockGenerateData
       .mockReturnValueOnce(Promise.resolve([]))
       .mockReturnValueOnce(Promise.resolve(commentsWithTextAndTopics));
 
@@ -76,7 +73,7 @@ describe("CategorizationTest", () => {
       [{ name: "Topic 1", subtopics: [] }]
     );
 
-    expect(mockGenerateComments).toHaveBeenCalledTimes(2);
+    expect(mockGenerateData).toHaveBeenCalledTimes(2);
     expect(commentRecords).toEqual(commentsWithTextAndTopics);
   });
 
@@ -108,7 +105,7 @@ describe("CategorizationTest", () => {
 
     // The first mock response includes only one comment, and for the next
     // response the two missing comments are returned.
-    mockGenerateComments
+    mockGenerateData
       .mockReturnValueOnce(Promise.resolve([commentsWithTextAndTopics[0]]))
       .mockReturnValueOnce(
         Promise.resolve([commentsWithTextAndTopics[1], commentsWithTextAndTopics[2]])
@@ -122,7 +119,7 @@ describe("CategorizationTest", () => {
       [{ name: "Topic 1", subtopics: [] }]
     );
 
-    expect(mockGenerateComments).toHaveBeenCalledTimes(2);
+    expect(mockGenerateData).toHaveBeenCalledTimes(2);
     expect(commentRecords).toEqual(commentsWithTextAndTopics);
   });
 
@@ -139,7 +136,7 @@ describe("CategorizationTest", () => {
 
     // Mock the model to always return an empty response. This simulates a
     // categorization failure.
-    mockGenerateComments.mockReturnValue(Promise.resolve([]));
+    mockGenerateData.mockReturnValue(Promise.resolve([]));
 
     const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
@@ -149,7 +146,7 @@ describe("CategorizationTest", () => {
       topicsJson
     );
 
-    expect(mockGenerateComments).toHaveBeenCalledTimes(3);
+    expect(mockGenerateData).toHaveBeenCalledTimes(3);
 
     const expected = [
       {
@@ -184,7 +181,7 @@ describe("CategorizationTest", () => {
 
     // Mock the model to always return an empty response. This simulates a
     // categorization failure.
-    mockGenerateComments.mockReturnValue(Promise.resolve([]));
+    mockGenerateData.mockReturnValue(Promise.resolve([]));
 
     const commentRecords = await categorizeWithRetry(
       new VertexModel("project", "location", "gemini-1000"),
@@ -194,7 +191,7 @@ describe("CategorizationTest", () => {
       topicsJson
     );
 
-    expect(mockGenerateComments).toHaveBeenCalledTimes(3);
+    expect(mockGenerateData).toHaveBeenCalledTimes(3);
 
     const expected = [
       {

@@ -21,23 +21,18 @@ import {
   HarmCategory,
   ModelParams,
   Schema,
-  SchemaType,
   VertexAI,
 } from "@google-cloud/vertexai";
-import { CommentRecord, isCommentRecordType, isTopicType, Summary, Topic } from "../types";
 import { Model } from "./model";
-import { parseStringIntoSummary } from "../tasks/grounding";
+import { checkDataSchema } from "../types";
+import { TSchema, Static } from "@sinclair/typebox";
 
 /**
  * Class to interact with models available through Google Cloud's Model Garden.
  */
 export class VertexModel extends Model {
   private vertexAI: VertexAI;
-  private baseModel: GenerativeModel;
-  private topicLearningModel: GenerativeModel;
-  private topicAndSubtopicLearningModel: GenerativeModel;
-  private topicCategorizationModel: GenerativeModel;
-  private topicAndSubtopicCategorizationModel: GenerativeModel;
+  private modelName: string;
 
   /**
    * Create a model object.
@@ -52,34 +47,24 @@ export class VertexModel extends Model {
       project: project,
       location: location,
     });
-
-    // Instantiate the models
-    this.baseModel = this.vertexAI.getGenerativeModel(
-      getModelSpec(modelName) // No schema for the base model
-    );
-    this.topicLearningModel = this.vertexAI.getGenerativeModel(
-      getModelSpec(modelName, topicLearningSchema)
-    );
-    this.topicAndSubtopicLearningModel = this.vertexAI.getGenerativeModel(
-      getModelSpec(modelName, topicAndSubtopicLearningSchema)
-    );
-    this.topicCategorizationModel = this.vertexAI.getGenerativeModel(
-      getModelSpec(modelName, topicCategorizationSchema)
-    );
-    this.topicAndSubtopicCategorizationModel = this.vertexAI.getGenerativeModel(
-      getModelSpec(modelName, topicAndSubtopicCategorizationSchema)
-    );
+    this.modelName = modelName;
   }
 
   /**
-   * Send a request to the model
+   * Get generative model corresponding to structured data output specification as a JSON Schema specification.
+   */
+  getGenerativeModel(schema?: TSchema): GenerativeModel {
+    return this.vertexAI.getGenerativeModel(getModelParams(this.modelName, schema));
+  }
+
+  /**
+   * Generate text based on the given prompt.
    * @param prompt the text including instructions and/or data to give the model
-   * @param model the model specification to use, by default it is unconstrained
    * @returns the model response as a string
    */
-  async generateText(prompt: string, model: GenerativeModel = this.baseModel): Promise<string> {
+  async generateText(prompt: string): Promise<string> {
     const req = getRequest(prompt);
-    const streamingResp = await model.generateContentStream(req);
+    const streamingResp = await this.getGenerativeModel().generateContentStream(req);
 
     const response = await streamingResp.response;
     if (response.candidates![0].content.parts[0].text) {
@@ -91,40 +76,18 @@ export class VertexModel extends Model {
   }
 
   /**
-   * Generates a summary based on the provided prompt.
-   * @param prompt The input prompt containing instructions and data for summarization.
-   * @returns the generated summary based on the given information
+   * Generate structured data based on the given prompt.
+   * @param prompt the text including instructions and/or data to give the model
+   * @param schema a JSON Schema specification (generated from TypeBox)
+   * @returns the model response as data structured according to the JSON Schema specification
    */
-  async generateSummary(prompt: string): Promise<Summary> {
-    // TODO: replace it with `groundSummary` call once we figure out how to hydrate comments
-    return parseStringIntoSummary(await this.generateText(prompt, this.baseModel));
-  }
-
-  /**
-   * Generates topics and optionally subtopics based on a prompt.
-   * @param prompt includes both model instructions and comments to find topics for.
-   * @param includeSubtopics when true both Topics and Subtopics will be found.
-   * @returns a list of topics that are present in the input.
-   */
-  async generateTopics(prompt: string, includeSubtopics: boolean): Promise<Topic[]> {
-    const model = includeSubtopics ? this.topicAndSubtopicLearningModel : this.topicLearningModel;
-    return generateTopicsWithModel(prompt, model);
-  }
-
-  /**
-   *  Categorizes the comments based on the given Topics.
-   * @param prompt includes both model instructions and comments to categorize.
-   * @param includeSubtopics when true both Topics and Subtopics will be found.
-   * @returns a list of Comments which all contain at least one associated Topic.
-   */
-  async generateCommentRecords(
-    prompt: string,
-    includeSubtopics: boolean
-  ): Promise<CommentRecord[]> {
-    const model = includeSubtopics
-      ? this.topicAndSubtopicCategorizationModel
-      : this.topicCategorizationModel;
-    return generateCommentRecordsWithModel(prompt, model);
+  async generateData(prompt: string, schema: TSchema): Promise<Static<typeof schema>> {
+    const response = await generateJSON(prompt, this.getGenerativeModel(schema));
+    if (!checkDataSchema(schema, response)) {
+      // TODO: Add retry logic for this error.
+      throw new Error("Model response does not match schema: " + response);
+    }
+    return response;
   }
 }
 
@@ -151,96 +114,13 @@ const safetySettings = [
   },
 ];
 
-// RESPONSE SCHEMAS
-// For details see: https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
-const topicLearningSchema: Schema = {
-  type: SchemaType.ARRAY,
-  items: {
-    type: SchemaType.OBJECT,
-    properties: {
-      name: { type: SchemaType.STRING },
-    },
-  },
-};
-
-const topicAndSubtopicLearningSchema: Schema = {
-  type: SchemaType.ARRAY,
-  items: {
-    type: SchemaType.OBJECT,
-    properties: {
-      name: { type: SchemaType.STRING },
-      subtopics: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            name: { type: SchemaType.STRING },
-          },
-        },
-      },
-    },
-  },
-};
-
-const topicCategorizationSchema: Schema = {
-  type: SchemaType.ARRAY,
-  items: {
-    type: SchemaType.OBJECT,
-    required: ["id", "topics"],
-    properties: {
-      id: { type: SchemaType.STRING }, // Comment id
-      topics: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          required: ["name"],
-          properties: {
-            name: { type: SchemaType.STRING }, // Topic name
-          },
-        },
-      },
-    },
-  },
-};
-
-const topicAndSubtopicCategorizationSchema: Schema = {
-  type: SchemaType.ARRAY,
-  items: {
-    type: SchemaType.OBJECT,
-    required: ["id", "topics"],
-    properties: {
-      id: { type: SchemaType.STRING }, // Comment id
-      topics: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          required: ["name", "subtopics"],
-          properties: {
-            name: { type: SchemaType.STRING }, // Topic name
-            subtopics: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                required: ["name"],
-                properties: {
-                  name: { type: SchemaType.STRING }, // Subtopic name
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
 /**
  * Creates a model specification object for Vertex AI generative models.
  *
  * @param schema Optional. The JSON schema for the response. Only used if responseMimeType is 'application/json'.
  * @returns A model specification object ready to be used with vertex_ai.getGenerativeModel().
  */
-function getModelSpec(modelName: string, schema?: Schema): ModelParams {
+function getModelParams(modelName: string, schema?: Schema): ModelParams {
   const modelParams: ModelParams = {
     model: modelName,
     generationConfig: {
@@ -268,46 +148,6 @@ function getRequest(prompt: string) {
   return {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
   };
-}
-
-/**
- * Helper function for tests. Categorizes the comments based on the given Topics.
- * @param prompt includes both model instructions and comments to categorize.
- * @param model what model to call for generation.
- * @returns a list of Comments which all contain at least one associated Topic.
- */
-// TODO: Restrict access to this function. It is intended to only be available for testing. It can
-// be made "protected" once it is a class method.
-export async function generateCommentRecordsWithModel(
-  prompt: string,
-  model: GenerativeModel
-): Promise<CommentRecord[]> {
-  const response = await generateJSON(prompt, model);
-  if (!response.every((response) => isCommentRecordType(response))) {
-    // TODO: Add retry logic for this error.
-    throw new Error("Model response comments are not all valid, response: " + response);
-  }
-  return response;
-}
-
-/**
- * Helper function for tests. Generates topics and optionally subtopics based on a prompt.
- * @param prompt includes both model instructions and comments to find topics for.
- * @param model what model to call for generation.
- * @returns a list of topics that are present in the input.
- */
-// TODO: Restrict access to this function. It is intended to only be available for testing. It can
-// be made "protected" once it is a class method.
-export async function generateTopicsWithModel(
-  prompt: string,
-  model: GenerativeModel
-): Promise<Topic[]> {
-  const response = await generateJSON(prompt, model);
-  if (!response.every((topic: Topic) => isTopicType(topic))) {
-    // TODO: Add retry logic for this error.
-    throw new Error("Model response topics are not all valid, response: " + response);
-  }
-  return response;
 }
 
 /**
@@ -357,11 +197,7 @@ export async function generateJSON(prompt: string, model: GenerativeModel): Prom
 
   if (response.candidates![0].content.parts[0].text) {
     const responseText = response.candidates![0].content.parts[0].text;
-    const generatedJSON = JSON.parse(responseText);
-    if (!Array.isArray(generatedJSON)) {
-      throw new Error("Model response is not a list: " + response);
-    }
-    return generatedJSON;
+    return JSON.parse(responseText);
   } else {
     console.warn("Malformed response: ", response);
     throw new Error("Error from Generative Model, response: " + response);
