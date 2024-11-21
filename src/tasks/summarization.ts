@@ -18,8 +18,10 @@ import { Model } from "../models/model";
 import { Comment, Summary } from "../types";
 import { getPrompt } from "../sensemaker_utils";
 
-const DEFAULT_INSTRUCTIONS = `Please summarize the public's perspective in relation to the comments submitted, making sure to 
-  highlight both areas of disagreement between the groups, as well as points of common ground.`;
+const DEFAULT_INSTRUCTIONS = `Please summarize the public's perspective in relation to the comments
+ submitted, making sure to include a section on both areas of disagreement between the groups, as 
+ well as points of common ground. The summary should also have an intro and a conclusion. Section 
+ names should be bolded.`;
 
 /**
  * Summarizes the comments using a LLM on Vertex.
