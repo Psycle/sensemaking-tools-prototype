@@ -18,10 +18,28 @@ import { Model } from "../models/model";
 import { Comment, Summary } from "../types";
 import { getPrompt } from "../sensemaker_utils";
 
-const DEFAULT_INSTRUCTIONS = `Please summarize the public's perspective in relation to the comments
- submitted, making sure to include a section on both areas of disagreement between the groups, as 
- well as points of common ground. The summary should also have an intro and a conclusion. Section 
- names should be bolded.`;
+function getSummarizationInstructions(includeGroups: boolean): string {
+  return `Please summarize the public's perspective in relation to the comments
+ submitted, making sure to include a section that's broken down by topic on both areas of
+ disagreement between the groups, as well as points of common ground. 
+ 
+ ${
+   includeGroups
+     ? "There should also be a section describing the two voting groups. Focus on the " +
+       "group's expressed views and don't guess the demographics of the groups. This section " +
+       "should be one paragraph long."
+     : ""
+ }
+ 
+ The summary should follow this format:
+ - Intro
+ ${includeGroups ? "- Description of Groups" : ""}
+ - Areas of Disagreement
+ - Areas of Agreement
+ - Conclusion
+
+ Section names should be bolded.`;
+}
 
 /**
  * Summarizes the comments using a LLM on Vertex.
@@ -37,7 +55,7 @@ export async function basicSummarize(
 ): Promise<Summary> {
   const commentTexts = comments.map((comment) => comment.text);
   return await model.generateSummary(
-    getPrompt(DEFAULT_INSTRUCTIONS, commentTexts, additionalInstructions)
+    getPrompt(getSummarizationInstructions(false), commentTexts, additionalInstructions)
   );
 }
 
@@ -66,6 +84,10 @@ export async function voteTallySummarize(
   additionalInstructions?: string
 ): Promise<Summary> {
   return await model.generateSummary(
-    getPrompt(DEFAULT_INSTRUCTIONS, formatCommentsWithVotes(commentData), additionalInstructions)
+    getPrompt(
+      getSummarizationInstructions(true),
+      formatCommentsWithVotes(commentData),
+      additionalInstructions
+    )
   );
 }
