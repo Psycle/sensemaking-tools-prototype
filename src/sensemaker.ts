@@ -14,9 +14,6 @@
 
 // Module to interact with sensemaking tools.
 
-// TODO: remove this once the library more closely matches the library specification doc. The
-// unused variables should be gone once the library is more fully implemented.
-
 import { generateTopicModelingPrompt, learnedTopicsValid } from "./tasks/topic_modeling";
 import { MAX_RETRIES, RETRY_DELAY_MS } from "./models/vertex_model";
 import { CommentRecord, Comment, SummarizationType, Summary, Topic } from "./types";

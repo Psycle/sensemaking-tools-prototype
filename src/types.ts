@@ -104,8 +104,7 @@ export class Summary {
             result += `[${chunk.representativeCommentIds.join(",")}]`;
           }
         }
-        // TODO: replace this with Chris' implementation that has comment text and vote tallies
-        // Apply citation tooltips as markdown.
+        // TODO: apply citation tooltips as markdown.
         // result = formatCitations(comments, this.chunks)
         break;
 
