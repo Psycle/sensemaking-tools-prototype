@@ -52,7 +52,7 @@ export class Sensemaker {
    * @return The model to use for the corresponding ModelSetting key
    */
   getModel(modelSetting: keyof ModelSettings): Model {
-    // TODO(ctsmall): Consider getting rid of this function once we have non default model
+    // Consider getting rid of this function once we have non default model
     // implementations, in case we want to switch to a static compilation of the correct model for each key.
     return this.modelSettings[modelSetting] || this.modelSettings.defaultModel;
   }

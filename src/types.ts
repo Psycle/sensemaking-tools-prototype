@@ -334,7 +334,7 @@ export function isCommentRecordType(data: any): data is CommentRecord {
 export function isTopicType(data: any): data is Topic {
   // This shouldn't be necessary, but checking directly against the union type seems to be ignoring
   // empty subtopic objects. This fixes it, but should maybe be reported as a bug?
-  // TODO(ctsmall): Figure out why this is happening, and fix more optimally
+  // TODO: Figure out why this is happening, and fix more optimally
   if ("subtopics" in data) {
     return checkDataSchema(NestedTopic, data);
   } else {
