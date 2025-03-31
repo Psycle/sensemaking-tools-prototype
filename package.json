@@ -1,0 +1,20 @@
+{
+  "name": "sensemaking-tools-prototype",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --watch --mode=development",
+    "build": "webpack --mode=development",
+    "preview": "serve -p 81 dist"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "copy-webpack-plugin": "^13.0.0",
+    "serve": "^14.2.4",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.2",
+    "webpack-cli": "^6.0.1"
+  }
+}
