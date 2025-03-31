@@ -4,9 +4,11 @@
     "noImplicitAny": true,
     "allowJs": true,
     "target": "ESNext",
-    "module": "ESNext", 
+    "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "jsx": "react",
+    "jsxFactory": "elements.createElement"
   }
 }

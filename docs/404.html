@@ -1,0 +1,6 @@
+<script>
+  var path = window.location.pathname;
+  var redirectTo = "/index.html"; // Redirect all unknown routes to index.html
+  history.replaceState(null, null, redirectTo + "#" + path);
+  window.location.replace(redirectTo + "#" + path);
+</script>

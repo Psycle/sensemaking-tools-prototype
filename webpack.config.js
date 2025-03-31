@@ -1,6 +1,8 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
+const OUTPUT_FOLDER = "docs";
+
 module.exports = {
   entry: './src/index.ts',
   module: {
@@ -17,13 +19,13 @@ module.exports = {
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'docs'),
+    path: path.resolve(__dirname, OUTPUT_FOLDER),
   },
   plugins: [
     // Copy index.html to /docs
     new CopyPlugin({
       patterns: [
-        { from: 'index.html', to: 'index.html' },
+        { from: 'public', to: '.' },
       ],
     }),
   ],
