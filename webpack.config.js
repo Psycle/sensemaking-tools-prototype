@@ -17,10 +17,10 @@ module.exports = {
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'gh-pages'),
+    path: path.resolve(__dirname, 'docs'),
   },
   plugins: [
-    // Copy index.html to /dist
+    // Copy index.html to /docs
     new CopyPlugin({
       patterns: [
         { from: 'index.html', to: 'index.html' },

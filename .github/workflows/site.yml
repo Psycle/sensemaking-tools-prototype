@@ -28,11 +28,11 @@ jobs:
         cache: 'npm'
     - name: Install, Build, Commit
       run: |
-        rm -rf gh-pages/
+        rm -rf docs/
         npm install
         npm run build
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add .
-        git commit -m "Commit gh-pages folder"
+        git commit -m "Commit docs folder"
         git push -f
