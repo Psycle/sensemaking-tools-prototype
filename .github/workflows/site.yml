@@ -30,12 +30,15 @@ jobs:
       run: npm install
     - name: Build
       run: npm run build
+      run: ls dist/
     - name: Commit
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git checkout -b site-built
+        ls
         rm -rf *
+        ls
         cp -r dist/* .
         git add .
         git commit -m "Commit dist folder"
