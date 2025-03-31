@@ -31,7 +31,6 @@ jobs:
         rm -rf dist/
         npm install
         npm run build
-        ls
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add .
