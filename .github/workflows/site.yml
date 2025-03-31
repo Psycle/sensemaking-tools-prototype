@@ -34,10 +34,7 @@ jobs:
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
-        ls
         git checkout -b site-built
-        ls
-        rm -rf *
         ls
         cp -r dist/* .
         git add .
