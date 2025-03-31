@@ -31,8 +31,9 @@ jobs:
         rm -rf dist/
         npm install
         npm run build
+        ls
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add .
         git commit -m "Commit dist folder"
-        git push -f origin site
+        git push -f
