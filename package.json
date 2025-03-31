@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "webpack --watch --mode=development",
     "build": "webpack --mode=development",
-    "preview": "serve -p 8080 gh-pages"
+    "preview": "serve -p 8080 docs"
   },
   "author": "",
   "license": "ISC",
