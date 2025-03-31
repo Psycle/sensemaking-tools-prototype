@@ -1,5 +1,6 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const OUTPUT_FOLDER = "docs";
 
@@ -18,11 +19,15 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js'],
   },
   output: {
-    filename: 'bundle.js',
+    filename: 'chunks/[name].js', // Output chunks within the 'chunks' folder
     path: path.resolve(__dirname, OUTPUT_FOLDER),
+    clean: true, // Ensures output folder cleanup (alternative to CleanWebpackPlugin)
   },
   plugins: [
-    // Copy index.html to /docs
+    // Clean the output folder before each build
+    new CleanWebpackPlugin(),
+
+    // Copy index.html and other files from 'public' to 'docs'
     new CopyPlugin({
       patterns: [
         { from: 'public', to: '.' },

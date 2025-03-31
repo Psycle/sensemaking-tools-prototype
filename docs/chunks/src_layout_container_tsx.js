@@ -25,7 +25,7 @@ eval("\n/// <reference path=\"./jsx/element-types.d.ts\" />\n/// <reference path
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony import */ var typed_html__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! typed-html */ \"./node_modules/typed-html/dist/src/elements.js\");\n\n/* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__(content) {\n    return typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement(\"div\", { class: \"container\" }, content);\n}\n\n\n//# sourceURL=webpack://sensemaking-tools-prototype/./src/layout/container.tsx?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony import */ var typed_html__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! typed-html */ \"./node_modules/typed-html/dist/src/elements.js\");\n\n/* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__(content) {\n    return typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement(\"section\", { class: \"glue-page\" }, content);\n}\n\n\n//# sourceURL=webpack://sensemaking-tools-prototype/./src/layout/container.tsx?");
 
 /***/ })
 
