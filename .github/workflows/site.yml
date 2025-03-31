@@ -34,7 +34,9 @@ jobs:
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
-        cp -r dist/* .dist/
+        git checkout -b site-built
+        rm -rf *
+        cp -r dist/* .
         git add .
         git commit -m "Commit dist folder"
-        git push -f origin site
+        git push -f origin site-built
