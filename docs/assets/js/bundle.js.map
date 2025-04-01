@@ -1,1 +1,1 @@
-{"version":3,"file":"assets/js/bundle.js","mappings":";;;;;;AAAA,OAAO,CAAC,GAAG,CAAC,wBAAwB,CAAC,CAAC","sources":["webpack://sensemaker/./src/index.ts"],"sourcesContent":["console.log(\"The javascript loaded.\");"],"names":[],"sourceRoot":""}
+{"version":3,"file":"assets/js/bundle.js","mappings":";;;;;;AAAA,QAAQ,CAAC,gBAAgB,CAAC,kBAAkB,EAAE,GAAG,EAAE;IAC/C,wBAAwB;AAC5B,CAAC,CAAC,CAAC","sources":["webpack://sensemaker/./src/index.ts"],"sourcesContent":["document.addEventListener(\"DOMContentLoaded\", () => {\n    // Add your code here...\n});\n"],"names":[],"sourceRoot":""}

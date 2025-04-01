@@ -1,1 +1,3 @@
-console.log("The javascript loaded.");
+document.addEventListener("DOMContentLoaded", () => {
+    // Add your code here...
+});
