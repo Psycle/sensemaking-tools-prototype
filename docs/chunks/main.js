@@ -28,9 +28,7 @@ async function handleRoute() {
     else {
         path = "/";
     }
-    console.log("path", path);
     const route = routes[path] || (() => __webpack_require__.e(/*! import() */ "src_pages_not-found_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/not-found */ "./src/pages/not-found.tsx")));
-    console.log("loaded?");
     const module = await route(); // Dynamically import the module
     // Import layout parts
     const [headerModule, footerModule, containerModule] = await Promise.all([
@@ -58,7 +56,6 @@ function navigate(event) {
         // Add the hash prefix only if the path is not "/"
         const hashPath = path === "/" ? path : `/#${path}`;
         window.history.pushState({}, "", hashPath);
-        console.log("hash Path", hashPath);
         handleRoute();
     }
 }

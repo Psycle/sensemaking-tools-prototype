@@ -11595,7 +11595,7 @@ __webpack_require__.r(__webpack_exports__);
     const links = [
         {
             label: "Homepage",
-            href: ",",
+            href: "/",
         },
         {
             label: "About Us",

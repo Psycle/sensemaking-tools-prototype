@@ -16,10 +16,7 @@ export async function handleRoute() {
     path = "/";
   }
 
-  console.log("path", path)
   const route = routes[path] || (() => import("../pages/not-found"));
-
-  console.log("loaded?");
   const module = await route(); // Dynamically import the module
 
    // Import layout parts
@@ -52,8 +49,6 @@ export function navigate(event: Event) {
     // Add the hash prefix only if the path is not "/"
     const hashPath = path === "/" ? path : `/#${path}`;
     window.history.pushState({}, "", hashPath);
-
-    console.log("hash Path", hashPath)
     handleRoute();
   }
 }

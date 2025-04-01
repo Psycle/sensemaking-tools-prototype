@@ -4,7 +4,7 @@ export default function () {
   const links = [
     {
       label: "Homepage",
-      href: ",",
+      href: "/",
     },
     {
       label: "About Us",
