@@ -11631,7 +11631,7 @@ __webpack_require__.r(__webpack_exports__);
             includeHamburger ? (typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-header__hamburger" },
                 typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { class: "glue-header__drawer-toggle-btn", "aria-label": "Open the navigation drawer" },
                     typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("svg", { class: "glue-icon glue-icon--24px", role: "presentation", "aria-hidden": "true" },
-                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "/assets/img/glue-icons.svg#menu" }))))) : '',
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "./assets/img/glue-icons.svg#menu" }))))) : '',
             typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-header__logo" },
                 typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-header__logo-link", href: "#", title: "Google" },
                     typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-header__logo-container" },

@@ -16,7 +16,7 @@ export default function (includeHamburger?: boolean) {
                 role="presentation"
                 aria-hidden="true"
               >
-                <use href="/assets/img/glue-icons.svg#menu"></use>
+                <use href="./assets/img/glue-icons.svg#menu"></use>
               </svg>
             </button>
           </div> 
