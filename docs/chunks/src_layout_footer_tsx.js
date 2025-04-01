@@ -140,7 +140,33 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var typed_html__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! typed-html */ "./node_modules/typed-html/dist/src/elements.js");
 
 /* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__() {
-    return typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("footer", null, "footer here.");
+    return typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("footer", { class: "glue-footer glue-spacer-3-top" },
+        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("h2", { class: "glue-visually-hidden" }, "Footer links"),
+        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("section", { class: "glue-footer__global" },
+            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-footer__logo" },
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { href: "https://www.google.com", title: "Google" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("svg", { role: "presentation", "aria-hidden": "true", class: "glue-footer__logo-img" },
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "/assets/img/glue-icons.svg#google-solid-logo" })))),
+            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("ul", { class: "glue-footer__global-links glue-no-bullet", role: "list" },
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-footer__link", href: "https://about.google/" }, "About Google")),
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-footer__link", href: "https://about.google/products/" }, "Google products")),
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-footer__link", href: "https://policies.google.com/privacy" }, "Privacy")),
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-footer__link", href: "https://policies.google.com/terms" }, "Terms"))),
+            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("ul", { class: "glue-footer__global-links glue-footer__global-links--extra glue-no-bullet", role: "list" },
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item\n          glue-footer__global-links-list-item--extra" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-footer__link", href: "https://support.google.com/?hl=en" },
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("svg", { role: "presentation", "aria-hidden": "true", class: "glue-icon\n              glue-icon--24px glue-icon--footer-help" },
+                            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "/assets/img/glue-icons.svg#help" })),
+                        "Help")),
+                typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("li", { class: "glue-footer__global-links-list-item\n          glue-footer__global-links-list-item--extra" },
+                    typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("select", { "aria-label": "Change language", name: "lang-selector", id: "lang-selector", class: "glue-form__dropdown glue-footer__lang-dropdown" },
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/en/mysite" }, "English"),
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/pt-BR/mysite" }, "Portugu\u00EAs \u2013 Brasil"),
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/ja/mysite" }, "\u65E5\u672C\u8A9E"))))));
 }
 
 

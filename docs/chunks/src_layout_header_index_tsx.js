@@ -11690,7 +11690,7 @@ __webpack_require__.r(__webpack_exports__);
     setTimeout(() => {
         const headerEl = document.querySelector(".glue-header");
         if (headerEl)
-            new _google_glue__WEBPACK_IMPORTED_MODULE_5__.Header(headerEl, {});
+            new _google_glue__WEBPACK_IMPORTED_MODULE_5__.Header(headerEl);
     }, 200);
     return (typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("header", null,
         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("header", { class: "glue-header glue-header--single" },

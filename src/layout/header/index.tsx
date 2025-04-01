@@ -12,7 +12,7 @@ import { Header } from "@google/glue";
 export default function () {
   setTimeout(() => {
     const headerEl = document.querySelector<HTMLElement>(".glue-header");
-    if (headerEl) new Header(headerEl, {});
+    if (headerEl) new Header(headerEl);
   }, 200);
 
   return (
