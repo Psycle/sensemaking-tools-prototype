@@ -1,0 +1,10 @@
+// Glue banner variables
+
+@use '../colors/variables' as colors;
+
+$link-color: colors.$grey-900;
+
+$link-focus-shadow-color: rgba(60, 64, 67, 1);
+
+$link-active-background: rgba(32, 33, 36, 0.12);
+$link-hover-background: rgba(32, 33, 36, 0.06);

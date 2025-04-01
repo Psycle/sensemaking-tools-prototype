@@ -1,24 +1,6 @@
-/*
- * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
- * This devtool is neither made for production nor for readable output files.
- * It uses "eval()" calls to create a separate source file in the browser devtools.
- * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
- * or disable the default devtool with "devtool: false".
- * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
- */
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
-
-/***/ "./src/index.ts":
-/*!**********************!*\
-  !*** ./src/index.ts ***!
-  \**********************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_router__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./lib/router */ \"./src/lib/router.ts\");\n\n// Attach navigate function globally (for inline onclick handlers)\nwindow.navigate = _lib_router__WEBPACK_IMPORTED_MODULE_0__.navigate;\n// Load the initial route\n(0,_lib_router__WEBPACK_IMPORTED_MODULE_0__.handleRoute)();\n\n\n//# sourceURL=webpack://sensemaking-tools-prototype/./src/index.ts?");
-
-/***/ }),
 
 /***/ "./src/lib/router.ts":
 /*!***************************!*\
@@ -26,7 +8,75 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib
   \***************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   handleRoute: () => (/* binding */ handleRoute),\n/* harmony export */   navigate: () => (/* binding */ navigate)\n/* harmony export */ });\nconst routes = {\n    \"/\": () => __webpack_require__.e(/*! import() */ \"src_pages_homepage_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/homepage */ \"./src/pages/homepage.tsx\")),\n    \"/about-us\": () => __webpack_require__.e(/*! import() */ \"src_pages_about-us_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/about-us */ \"./src/pages/about-us.tsx\")),\n};\n// GitHub Pages requires hash routing since it's a static site.\n// All routes (except home) need \"/#/\", e.g., \"/#/about-us\".\nasync function handleRoute() {\n    let path = window.location.hash;\n    // Remove the hash prefix only if it starts with \"#/\"\n    if (path.startsWith(\"#/\")) {\n        path = path.replace(\"#/\", \"/\");\n    }\n    else {\n        path = \"/\";\n    }\n    console.log(\"path\", path);\n    const route = routes[path] || (() => __webpack_require__.e(/*! import() */ \"src_pages_not-found_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/not-found */ \"./src/pages/not-found.tsx\")));\n    console.log(\"loaded?\");\n    const module = await route(); // Dynamically import the module\n    // Import layout parts\n    const [headerModule, footerModule, containerModule] = await Promise.all([\n        __webpack_require__.e(/*! import() */ \"src_layout_header_index_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../layout/header */ \"./src/layout/header/index.tsx\")),\n        __webpack_require__.e(/*! import() */ \"src_layout_footer_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../layout/footer */ \"./src/layout/footer.tsx\")),\n        __webpack_require__.e(/*! import() */ \"src_layout_container_tsx\").then(__webpack_require__.bind(__webpack_require__, /*! ../layout/container */ \"./src/layout/container.tsx\")),\n    ]);\n    // Dynamically assemble the layout\n    const header = headerModule.default();\n    const footer = footerModule.default();\n    const container = containerModule.default(module.default());\n    const renderedHtml = `\n    ${header}\n    ${container}\n    ${footer}\n  `;\n    // Update the DOM with the full layout\n    document.getElementById(\"root\").innerHTML = renderedHtml;\n}\n// Handle navigation events\nfunction navigate(event) {\n    event.preventDefault();\n    const path = event.target.getAttribute(\"href\");\n    if (path) {\n        // Add the hash prefix only if the path is not \"/\"\n        const hashPath = path === \"/\" ? path : `/#${path}`;\n        window.history.pushState({}, \"\", hashPath);\n        console.log(\"hash Path\", hashPath);\n        handleRoute();\n    }\n}\n// Listen for back/forward navigation\nwindow.onpopstate = handleRoute;\n\n\n//# sourceURL=webpack://sensemaking-tools-prototype/./src/lib/router.ts?");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   handleRoute: () => (/* binding */ handleRoute),
+/* harmony export */   navigate: () => (/* binding */ navigate)
+/* harmony export */ });
+const routes = {
+    "/": () => __webpack_require__.e(/*! import() */ "src_pages_homepage_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/homepage */ "./src/pages/homepage.tsx")),
+    "/about-us": () => __webpack_require__.e(/*! import() */ "src_pages_about-us_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/about-us */ "./src/pages/about-us.tsx")),
+};
+// GitHub Pages requires hash routing since it's a static site.
+// All routes (except home) need "/#/", e.g., "/#/about-us".
+async function handleRoute() {
+    let path = window.location.hash;
+    // Remove the hash prefix only if it starts with "#/"
+    if (path.startsWith("#/")) {
+        path = path.replace("#/", "/");
+    }
+    else {
+        path = "/";
+    }
+    console.log("path", path);
+    const route = routes[path] || (() => __webpack_require__.e(/*! import() */ "src_pages_not-found_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../pages/not-found */ "./src/pages/not-found.tsx")));
+    console.log("loaded?");
+    const module = await route(); // Dynamically import the module
+    // Import layout parts
+    const [headerModule, footerModule, containerModule] = await Promise.all([
+        Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_typed-html_dist_src_elements_js-node_modules_material_web_checkbox_check-bb600d"), __webpack_require__.e("src_layout_header_index_tsx")]).then(__webpack_require__.bind(__webpack_require__, /*! ../layout/header */ "./src/layout/header/index.tsx")),
+        __webpack_require__.e(/*! import() */ "src_layout_footer_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../layout/footer */ "./src/layout/footer.tsx")),
+        __webpack_require__.e(/*! import() */ "src_layout_container_tsx").then(__webpack_require__.bind(__webpack_require__, /*! ../layout/container */ "./src/layout/container.tsx")),
+    ]);
+    // Dynamically assemble the layout
+    const header = headerModule.default();
+    const footer = footerModule.default();
+    const container = containerModule.default(module.default());
+    const renderedHtml = `
+    ${header}
+    ${container}
+    ${footer}
+  `;
+    // Update the DOM with the full layout
+    document.getElementById("root").innerHTML = renderedHtml;
+}
+// Handle navigation events
+function navigate(event) {
+    event.preventDefault();
+    const path = event.target.getAttribute("href");
+    if (path) {
+        // Add the hash prefix only if the path is not "/"
+        const hashPath = path === "/" ? path : `/#${path}`;
+        window.history.pushState({}, "", hashPath);
+        console.log("hash Path", hashPath);
+        handleRoute();
+    }
+}
+// Listen for back/forward navigation
+window.onpopstate = handleRoute;
+
+
+/***/ }),
+
+/***/ "./src/themes/index.scss":
+/*!*******************************!*\
+  !*** ./src/themes/index.scss ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
 
 /***/ })
 
@@ -91,6 +141,15 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
 /******/ 			return "chunks/" + chunkId + ".js";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get mini-css chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.miniCssF = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return undefined;
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -282,11 +341,24 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /******/ 	})();
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module can't be inlined because the eval devtool is used.
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/index.ts");
-/******/ 	
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+/*!**********************!*\
+  !*** ./src/index.ts ***!
+  \**********************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _lib_router__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./lib/router */ "./src/lib/router.ts");
+/* harmony import */ var _themes_index_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./themes/index.scss */ "./src/themes/index.scss");
+
+
+// Attach navigate function globally (for inline onclick handlers)
+window.navigate = _lib_router__WEBPACK_IMPORTED_MODULE_0__.navigate;
+// Load the initial route
+(0,_lib_router__WEBPACK_IMPORTED_MODULE_0__.handleRoute)();
+
+})();
+
 /******/ })()
 ;
+//# sourceMappingURL=main.js.map

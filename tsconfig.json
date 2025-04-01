@@ -1,14 +1,25 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/",
+    "outDir": "./docs/",
     "noImplicitAny": true,
     "allowJs": true,
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Node",
+    "lib": ["es2018", "dom", "DOM.Iterable", "ScriptHost"],
     "strict": true,
     "esModuleInterop": true,
     "jsx": "react",
-    "jsxFactory": "elements.createElement"
-  }
+    "jsxFactory": "elements.createElement",
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "declaration": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "pretty": true,
+    "sourceMap": true,
+  },
+  "exclude": ["_glue"]
 }

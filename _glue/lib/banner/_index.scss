@@ -1,0 +1,153 @@
+@use '../accessibility/mixins' as glue-accessibility-mixins;
+@use '../accessibility/variables' as glue-accessibility-variables;
+@use '../breakpoints/mixins' as breakpoints;
+@use '../colors/variables' as colors;
+@use '../typography';
+
+@use 'variables';
+
+.glue-banner {
+  display: flex;
+  opacity: 1;
+  padding-block: 12px;
+  padding-inline: 24px 12px;
+  transition: opacity 0.35s ease-out;
+  width: 100%;
+
+  &--low-emphasis {
+    background: colors.$grey-50;
+  }
+
+  &--medium-emphasis {
+    background: colors.$blue-50;
+  }
+
+  &--high-emphasis {
+    background: colors.$yellow-50;
+  }
+
+  &__content {
+    @extend .glue-caption;
+
+    margin: auto;
+    text-align: center;
+    width: inherit;
+
+    a {
+      background: transparent;
+      box-shadow: none;
+      color: variables.$link-color;
+      display: inline;
+      overflow: hidden;
+      outline: none;
+      text-decoration: underline;
+      transition: background-color 0.2s, color 0.2s;
+
+      &:hover,
+      &:focus,
+      &:active {
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      &:active {
+        background-color: variables.$link-active-background;
+        color: variables.$link-color;
+        box-shadow: none;
+        outline: auto 2px Highlight; // Firefox
+        outline: auto 5px -webkit-focus-ring-color;
+      }
+
+      &:focus {
+        @include glue-accessibility-mixins.hcm-focus;
+        background-color: transparent;
+        box-shadow: 0 0 0 2px variables.$link-focus-shadow-color;
+        color: variables.$link-color;
+      }
+
+      &:hover {
+        background-color: variables.$link-hover-background;
+        color: variables.$link-color;
+      }
+
+      &:visited {
+        color: variables.$link-color;
+      }
+    }
+
+    @include glue-accessibility-mixins.hcm-mq {
+      color: glue-accessibility-variables.$hcm-color-text;
+    }
+  }
+
+  &__close-btn {
+    background: inherit;
+    border: none;
+    border-radius: 0;
+    color: colors.$grey-900;
+    cursor: pointer;
+    height: 48px;
+    margin-inline-start: 12px;
+    min-width: 48px;
+    overflow: hidden;
+    padding: 12px;
+    position: relative;
+    top: 0;
+    transition: background 0.2s ease-in;
+    width: 48px;
+
+    &:hover {
+      background: colors.$grey-800;
+      @include glue-accessibility-mixins.hcm-forced-color;
+
+      &::after,
+      &::before {
+        background: colors.$grey-0;
+      }
+    }
+
+    &:focus,
+    &:focus-visible {
+      box-shadow: 0 0 0 2px colors.$blue-600;
+      outline: 0;
+      @include glue-accessibility-mixins.hcm-focus;
+    }
+
+    &::before,
+    &::after {
+      background: colors.$grey-900;
+      border: 1px solid transparent;
+      content: ' ';
+      height: 24px;
+      left: 23px;
+      position: absolute;
+      transition: background 0.2s ease-in;
+      top: 12px;
+      width: 2px;
+
+      @include glue-accessibility-mixins.hcm-mq {
+        border-color: glue-accessibility-variables.$hcm-color-button-text;
+      }
+    }
+
+    &::before {
+      transform: rotate(45deg);
+    }
+
+    &::after {
+      transform: rotate(-45deg);
+    }
+  }
+
+  &--hidden {
+    opacity: 0;
+  }
+
+  @include glue-accessibility-mixins.hcm-mq {
+    border: 2px solid glue-accessibility-variables.$hcm-color-text;
+  }
+
+  @include breakpoints.bp(sm-only) {
+    padding-inline-start: 12px;
+  }
+}
