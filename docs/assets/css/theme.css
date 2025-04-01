@@ -1,6 +1,6 @@
-/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./node_modules/resolve-url-loader/index.js??ruleSet[1].rules[1].use[3]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[1].use[4]!./src/themes/index.scss ***!
-  \*********************************************************************************************************************************************************************************************************************************************************************************************************************/
+/*!******************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/styles.scss ***!
+  \******************************************************************************************************************************************************************/
 @charset "UTF-8";
 /*! normalize.css v3.0.1 | MIT License | git.io/normalize */
 /**
@@ -186,6 +186,7 @@ figure {
  * Address differences between Firefox and other browsers.
  */
 hr {
+  -moz-box-sizing: content-box;
   box-sizing: content-box;
   height: 0;
 }
@@ -317,7 +318,9 @@ input[type=number]::-webkit-outer-spin-button {
  *    (include `-moz` to future-proof).
  */
 input[type=search] {
-  -webkit-appearance: textfield; /* 1 */ /* 2 */
+  -webkit-appearance: textfield; /* 1 */
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box; /* 2 */
   box-sizing: content-box;
 }
 
@@ -623,7 +626,7 @@ img {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-weight: 400;
-  word-wrap: initial;
+  overflow-wrap: initial;
   word-wrap: initial;
 }
 
@@ -632,7 +635,6 @@ img {
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 500;
-  letter-spacing: normal;
   letter-spacing: initial;
   font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
   font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
@@ -673,7 +675,6 @@ img {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -697,7 +698,6 @@ img {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -721,7 +721,6 @@ img {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -834,7 +833,7 @@ body {
   font-weight: 300;
   line-height: 1.444;
   margin: 0;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   padding: 0;
   word-wrap: break-word;
 }
@@ -1415,7 +1414,6 @@ dd {
   font-size: 1.75rem;
   line-height: 1.2857142857;
   font-weight: 400;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-headline.glue-headline--headline-2 {
@@ -1516,7 +1514,6 @@ dd {
   font-size: 1.5rem;
   line-height: 1.3333333333;
   font-weight: 400;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-headline.glue-headline--headline-3 {
@@ -1617,7 +1614,6 @@ dd {
   font-size: 1.25rem;
   line-height: 1.4;
   font-weight: 400;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-headline.glue-headline--headline-4 {
@@ -1658,7 +1654,6 @@ dd {
     font-size: 1.5rem;
     line-height: 1.3333333333;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1685,7 +1680,6 @@ dd {
     font-size: 1.75rem;
     line-height: 1.2857142857;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1712,7 +1706,6 @@ dd {
     font-size: 1.75rem;
     line-height: 1.2857142857;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1721,7 +1714,6 @@ dd {
   font-size: 1.25rem;
   line-height: 1.4;
   font-weight: 400;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-headline.glue-headline--headline-5 {
@@ -1762,7 +1754,6 @@ dd {
     font-size: 1.25rem;
     line-height: 1.4;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1789,7 +1780,6 @@ dd {
     font-size: 1.25rem;
     line-height: 1.4;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1816,7 +1806,6 @@ dd {
     font-size: 1.25rem;
     line-height: 1.4;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1825,7 +1814,6 @@ dd {
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 500;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-headline.glue-headline--headline-6 {
@@ -1866,7 +1854,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1893,7 +1880,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -1920,7 +1906,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2025,7 +2010,6 @@ dd {
   font-size: 1.125rem;
   line-height: 1.5555555556;
   font-weight: 400;
-  letter-spacing: normal;
   letter-spacing: initial;
 }
 [lang=ar] .glue-body .glue-body--large {
@@ -2066,7 +2050,6 @@ dd {
     font-size: 1.125rem;
     line-height: 1.5555555556;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2093,7 +2076,6 @@ dd {
     font-size: 1.125rem;
     line-height: 1.5555555556;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2120,7 +2102,6 @@ dd {
     font-size: 1.125rem;
     line-height: 1.5555555556;
     font-weight: 400;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2130,7 +2111,6 @@ dd {
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 500;
-  letter-spacing: normal;
   letter-spacing: initial;
   font-family: "Google Sans", Arial, Helvetica, sans-serif;
   font-family: "Google Sans", Arial, Helvetica, sans-serif;
@@ -2171,7 +2151,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2195,7 +2174,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2219,7 +2197,6 @@ dd {
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
-    letter-spacing: normal;
     letter-spacing: initial;
   }
 }
@@ -2856,7 +2833,6 @@ body::after {
   overflow: hidden;
   padding: 12px 24px 12px 24px;
   text-align: center;
-  -webkit-text-decoration: none;
   text-decoration: none;
   transition: background-color 0.2s, box-shadow 0.2s, color 0.2s;
   vertical-align: middle;
@@ -3759,12 +3735,10 @@ body::after {
   font-family: "Product Sans", "Google Sans", Arial, Helvetica, sans-serif;
   font-style: normal;
   font-weight: 400;
-  -webkit-hyphens: auto;
-          hyphens: auto;
+  hyphens: auto;
   letter-spacing: 0.25px;
-  word-wrap: initial;
+  overflow-wrap: initial;
   padding-inline-start: 5px;
-  -webkit-text-decoration: none;
   text-decoration: none;
   text-rendering: optimizeLegibility;
   word-wrap: initial;
@@ -4330,12 +4304,10 @@ body::after {
 }
 .glue-header--no-cta .glue-header__drawer.glue-header__drawer--is-open .glue-header__tier,
 .glue-header--no-cta .glue-header__bar--desktop.glue-header__drawer--is-open .glue-header__tier {
-  max-height: -moz-fit-content;
   max-height: fit-content;
 }
 .glue-header__drawer.glue-header__drawer--is-open .glue-header__tier .glue-header__container,
 .glue-header__bar--desktop.glue-header__drawer--is-open .glue-header__tier .glue-header__container {
-  min-height: -moz-fit-content;
   min-height: fit-content;
 }
 .glue-header__drawer.glue-header__drawer--is-open .glue-header__tier .glue-header__container:first-child,
@@ -4437,7 +4409,6 @@ body::after {
 @media (min-width: 1024px) {
   .glue-header__link-bar {
     flex-direction: row;
-    display: inline;
     display: initial;
     height: 100%;
     overflow: visible;
@@ -4543,7 +4514,6 @@ body::after {
   overflow: hidden;
   padding-inline-end: 12px;
   padding-inline-start: 20px;
-  -webkit-text-decoration: none;
   text-decoration: none;
   white-space: nowrap;
   width: calc(100% - 8px);
@@ -4605,7 +4575,6 @@ body::after {
   .glue-header__link, .glue-header__logo-link {
     border-radius: 4px;
     padding-inline-start: 12px;
-    width: auto;
     width: initial;
   }
 }
@@ -4959,7 +4928,6 @@ body::after {
 .glue-header__logo--product .glue-header__logo {
   align-content: flex-start;
   align-items: center;
-  -webkit-text-decoration: none;
   text-decoration: none;
 }
 .glue-header--complex-stacked .glue-header__logo {
@@ -4990,8 +4958,7 @@ body::after {
   align-items: center;
   display: flex;
   height: 100%;
-  -webkit-hyphens: none;
-          hyphens: none;
+  hyphens: none;
   justify-content: flex-end;
   letter-spacing: 0.1px;
   margin-block: 0;
@@ -5008,7 +4975,6 @@ body::after {
   }
 }
 .glue-header__logo .glue-header__logo--product-campaign:hover, .glue-header__logo .glue-header__logo--product-campaign:focus, .glue-header__logo .glue-header__logo--product-campaign:active {
-  background-color: transparent;
   background-color: initial;
   outline: none;
 }
@@ -5081,7 +5047,6 @@ body::after {
   width: auto;
 }
 .glue-header__logo-link:hover {
-  background-color: transparent;
   background-color: initial;
 }
 .glue-header__bar--mobile .glue-header__logo-link {
@@ -5128,7 +5093,6 @@ body::after {
 }
 
 .glue-header--complex-stacked .glue-header__container .glue-header__logo:last-child:hover {
-  background-color: transparent;
   background-color: initial;
 }
 
@@ -5270,7 +5234,6 @@ body::after {
     top: 90%;
     transition: opacity 150ms ease-in;
     visibility: hidden;
-    width: -moz-max-content;
     width: max-content;
     z-index: 1000;
   }
@@ -5295,7 +5258,6 @@ body::after {
     display: flex;
     flex: 1 0 auto;
     flex-direction: row;
-    min-width: -moz-max-content;
     min-width: max-content;
     padding-block: 1px;
   }
@@ -5512,7 +5474,6 @@ body::after {
   min-height: 72px;
   padding-block: 12px;
   padding-inline: 18px 20px;
-  -webkit-text-decoration: none;
   text-decoration: none;
 }
 @media (max-width: 599px) {
@@ -5724,7 +5685,6 @@ body::after {
   height: 64px;
   max-height: 64px;
   padding: 0 1px;
-  -webkit-text-decoration: none;
   text-decoration: none;
   white-space: nowrap;
   width: auto;
@@ -5758,7 +5718,6 @@ body::after {
   min-height: 48px;
   min-width: 48px;
   padding: 12px 0;
-  -webkit-text-decoration: none;
   text-decoration: none;
 }
 [lang=ar] .glue-footer__link {
@@ -6934,4 +6893,4 @@ body::after {
   }
 }
 
-/*# sourceMappingURL=main.css.map*/
+/*# sourceMappingURL=theme.css.map*/

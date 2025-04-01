@@ -1,7 +1,0 @@
-@use '@google/glue/lib/colors/variables' as colors-variables;
-
-.demo-homepage__content > p {
-  color: colors-variables.$grey-700;
-  line-height: 32px; 
-  margin: 24px 0;
-}
