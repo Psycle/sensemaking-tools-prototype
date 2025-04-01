@@ -30,7 +30,7 @@ export default function (includeHamburger?: boolean) {
                 role="presentation"
                 aria-hidden="true"
               >
-                <use href="/assets/img/glue-icons.svg#google-color-logo"></use>
+                <use href="./assets/img/glue-icons.svg#google-color-logo"></use>
               </svg>
             </div>
             <span class="glue-header__logo--product">Product</span>

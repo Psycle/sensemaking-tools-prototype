@@ -11636,7 +11636,7 @@ __webpack_require__.r(__webpack_exports__);
                 typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("a", { class: "glue-header__logo-link", href: "#", title: "Google" },
                     typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-header__logo-container" },
                         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("svg", { class: "glue-header__logo-svg", role: "presentation", "aria-hidden": "true" },
-                            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "/assets/img/glue-icons.svg#google-color-logo" }))),
+                            typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("use", { href: "./assets/img/glue-icons.svg#google-color-logo" }))),
                     typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("span", { class: "glue-header__logo--product" }, "Product"))))));
 }
 

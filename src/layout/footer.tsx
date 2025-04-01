@@ -12,7 +12,7 @@ export default function () {
               aria-hidden="true"
               class="glue-footer__logo-img"
             >
-              <use href="/assets/img/glue-icons.svg#google-solid-logo"></use>
+              <use href="./assets/img/glue-icons.svg#google-solid-logo"></use>
             </svg>
           </a>
         </div>
@@ -67,7 +67,7 @@ export default function () {
                 class="glue-icon
               glue-icon--24px glue-icon--footer-help"
               >
-                <use href="/assets/img/glue-icons.svg#help"></use>
+                <use href="./assets/img/glue-icons.svg#help"></use>
               </svg>
               Help
             </a>
