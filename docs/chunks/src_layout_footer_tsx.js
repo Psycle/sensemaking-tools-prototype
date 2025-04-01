@@ -140,7 +140,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var typed_html__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! typed-html */ "./node_modules/typed-html/dist/src/elements.js");
 
 /* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__() {
-    return typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("footer", { class: "glue-footer glue-spacer-3-top" },
+    return (typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("footer", { class: "glue-footer glue-spacer-3-top" },
         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("h2", { class: "glue-visually-hidden" }, "Footer links"),
         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("section", { class: "glue-footer__global" },
             typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { class: "glue-footer__logo" },
@@ -166,7 +166,7 @@ __webpack_require__.r(__webpack_exports__);
                     typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("select", { "aria-label": "Change language", name: "lang-selector", id: "lang-selector", class: "glue-form__dropdown glue-footer__lang-dropdown" },
                         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/en/mysite" }, "English"),
                         typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/pt-BR/mysite" }, "Portugu\u00EAs \u2013 Brasil"),
-                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/ja/mysite" }, "\u65E5\u672C\u8A9E"))))));
+                        typed_html__WEBPACK_IMPORTED_MODULE_0__.createElement("option", { value: "https://www.google.com/intl/ja/mysite" }, "\u65E5\u672C\u8A9E")))))));
 }
 
 
