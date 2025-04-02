@@ -49,15 +49,28 @@ jobs:
         # rename the main.docs as it conflicts on namespace
         mv docs documentation
 
+        ls
+        echo "-----"
+
         # move site to the root and remove the folder
         mv site/* public
         rm -r site
 
+
+        ls
+        echo "-----"
+
         # move documention into public/documention
         mv documention public
 
+        ls
+        echo "-----"
+
         # finally public back to docs
         mv public docs
+
+        ls
+        echo "-----"
 
         # Commit changes only taking docs so any remnant isnt saved
         git add docs
