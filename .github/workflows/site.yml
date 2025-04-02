@@ -14,14 +14,30 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
     steps:
     - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
     - name: Amalgamate site and docs
       run: |
         # creds
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git fetch
+
+        # do this in docs
+        rm -rf public
+        mkdir public
+        cd public
 
         # get the site and the docs
         git checkout origin/site-sm -- site
@@ -33,6 +49,9 @@ jobs:
 
         # rename docs
         mv docs documentation
+
+        cd ..
+        mv public docs
 
         # Commit changes
         git add .
