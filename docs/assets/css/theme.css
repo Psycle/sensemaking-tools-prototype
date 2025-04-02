@@ -6893,4 +6893,41 @@ body::after {
   }
 }
 
+.g-section-1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  min-height: 400px;
+  text-align: center;
+}
+.g-section-1 .__container {
+  max-width: 599px;
+  margin: 0 auto;
+}
+.g-section-1 .__container .glue-headline {
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.g-section-2 {
+  background-color: #1d2559;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+.g-section-2 .--container {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+  color: white;
+}
+.g-section-2 .--container .glue-headline {
+  color: white;
+}
+
 /*# sourceMappingURL=theme.css.map*/

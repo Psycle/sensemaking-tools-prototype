@@ -1,16 +1,58 @@
 // Import Glue core layout components
-@use '@google/glue/lib/core';
-@use '@google/glue/lib/typography';
+@use "@google/glue/lib/core";
+@use "@google/glue/lib/typography";
 @use "@google/glue/lib/page";
-@use '@google/glue/lib/breakpoints';
-@use '@google/glue/lib/buttons';
-@use '@google/glue/lib/icons';
+@use "@google/glue/lib/breakpoints";
+@use "@google/glue/lib/breakpoints/_variables" as bv;
+@use "@google/glue/lib/buttons";
+@use "@google/glue/lib/icons";
 
 // Import Glue UI components
-@use '@google/glue/lib/header';
-@use '@google/glue/lib/footer';
+@use "@google/glue/lib/header";
+@use "@google/glue/lib/footer";
 @use "@google/glue/lib/grids";
 
 // Import Glue layout overrides
-@use '@google/glue/lib/accessibility';
+@use "@google/glue/lib/accessibility";
 @use "@google/glue/lib/spacers";
+
+// Variables
+$color_primary: #1d2559;
+
+.g-section-1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  min-height: 400px;
+  text-align: center;
+
+  .__container {
+    max-width: bv.$viewport-sm-max-width;
+    margin: 0 auto;
+    .glue-headline {
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+  }
+}
+
+.g-section-2 {
+  background-color: $color_primary;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+
+  .--container {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px;
+    color: white;
+
+    .glue-headline { color: white;}
+  }
+}
