@@ -6773,6 +6773,357 @@ body::after {
   }
 }
 
+.glue-cards {
+  list-style: none;
+  margin: 0;
+}
+@supports (display: grid) {
+  .glue-cards {
+    display: grid;
+    grid-gap: 28px 28px;
+  }
+  .glue-cards--compact {
+    grid-gap: 16px 16px;
+  }
+}
+@media (min-width: 600px) {
+  @supports (display: grid) {
+    .glue-cards {
+      display: grid;
+      grid-gap: 40px 40px;
+    }
+    .glue-cards--compact {
+      grid-gap: 24px 24px;
+    }
+  }
+}
+@media (min-width: 1024px) {
+  @supports (display: grid) {
+    .glue-cards {
+      display: grid;
+      grid-gap: 48px 48px;
+    }
+    .glue-cards--compact {
+      grid-gap: 24px 24px;
+    }
+  }
+}
+@media (min-width: 1440px) {
+  @supports (display: grid) {
+    .glue-cards {
+      display: grid;
+      grid-gap: 64px 64px;
+    }
+    .glue-cards--compact {
+      grid-gap: 24px 24px;
+    }
+  }
+}
+
+.glue-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 0 0 transparent;
+  display: block;
+  height: 100%;
+  min-height: 96px;
+  outline: 0;
+  overflow: hidden;
+  text-decoration: none;
+  transition: box-shadow 0.25s;
+  transform: translateZ(0);
+  width: 100%;
+}
+.glue-card:active, .glue-card:hover, .glue-card:focus {
+  background: #fff;
+}
+.glue-card:active .glue-card__inner::before, .glue-card:hover .glue-card__inner::before, .glue-card:focus .glue-card__inner::before {
+  border-color: rgba(218, 220, 224, 0);
+}
+.glue-card:hover {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+.glue-card:active, .glue-card:focus {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px #1a73e8;
+}
+.glue-card__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 94px;
+  position: relative;
+  width: 100%;
+}
+.glue-card__inner::before {
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  content: "";
+  height: 100%;
+  position: absolute;
+  transition: border 0.25s;
+  width: 100%;
+}
+.glue-card__asset {
+  flex: 0 0 auto;
+  position: relative;
+  width: 100%;
+}
+.glue-card__asset img {
+  display: block;
+  width: 100%;
+}
+.glue-card__asset .glue-icon {
+  color: #fff;
+  height: 64px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+}
+.glue-card__asset--logo {
+  padding: 24px 24px 16px;
+}
+.glue-card__asset--logo img {
+  height: 48px;
+  width: auto;
+}
+.glue-card__asset--grey::before, .glue-card__asset--red::before {
+  background: #fff;
+  content: "";
+  height: 32px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+}
+.glue-card__asset--grey .glue-icon {
+  color: #202124;
+}
+.glue-card__asset--red .glue-icon {
+  color: #f00;
+}
+.glue-card__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-flow: column;
+  padding: 24px 24px 0;
+  width: 100%;
+}
+.glue-card__content:last-child {
+  padding-bottom: 24px;
+}
+.glue-card__content .glue-label {
+  color: #5f6368;
+}
+.glue-card__content .glue-headline {
+  color: #202124;
+}
+.glue-card__content .glue-card__description,
+.glue-card__content .glue-caption {
+  color: #5f6368;
+}
+.glue-card__content .glue-label,
+.glue-card__content .glue-headline,
+.glue-card__content .glue-card__description,
+.glue-card__content .glue-caption {
+  display: block;
+  margin-top: 8px;
+}
+.glue-card__content .glue-label:first-child,
+.glue-card__content .glue-headline:first-child,
+.glue-card__content .glue-card__description:first-child,
+.glue-card__content .glue-caption:first-child {
+  margin-top: 0;
+}
+.glue-card__description {
+  font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0.1px;
+  font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
+  font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
+  font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
+}
+[lang=ar] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Arabic", Arial, Helvetica, sans-serif;
+}
+[lang=ja] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Japanese", "Noto Sans JP", Arial, Helvetica, sans-serif;
+}
+[lang=ko] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Korean", "Noto Sans KR", Arial, Helvetica, sans-serif;
+}
+[lang=zh-CN] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Simplified Chinese", "Noto Sans SC", Arial, Helvetica, sans-serif;
+}
+[lang=zh-TW] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Traditional Chinese", "Noto Sans TC", Arial, Helvetica, sans-serif;
+}
+[lang=ar] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Arabic", Arial, Helvetica, sans-serif;
+}
+[lang=ja] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Japanese", "Noto Sans JP", Arial, Helvetica, sans-serif;
+}
+[lang=ko] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Korean", "Noto Sans KR", Arial, Helvetica, sans-serif;
+}
+[lang=zh-CN] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Simplified Chinese", "Noto Sans SC", Arial, Helvetica, sans-serif;
+}
+[lang=zh-TW] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Traditional Chinese", "Noto Sans TC", Arial, Helvetica, sans-serif;
+}
+@media (min-width: 600px) {
+  .glue-card__description {
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0.1px;
+  }
+}
+[lang=ar] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Arabic", Arial, Helvetica, sans-serif;
+}
+[lang=ja] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Japanese", "Noto Sans JP", Arial, Helvetica, sans-serif;
+}
+[lang=ko] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Korean", "Noto Sans KR", Arial, Helvetica, sans-serif;
+}
+[lang=zh-CN] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Simplified Chinese", "Noto Sans SC", Arial, Helvetica, sans-serif;
+}
+[lang=zh-TW] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Traditional Chinese", "Noto Sans TC", Arial, Helvetica, sans-serif;
+}
+@media (min-width: 1024px) {
+  .glue-card__description {
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0.1px;
+  }
+}
+[lang=ar] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Arabic", Arial, Helvetica, sans-serif;
+}
+[lang=ja] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Japanese", "Noto Sans JP", Arial, Helvetica, sans-serif;
+}
+[lang=ko] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Korean", "Noto Sans KR", Arial, Helvetica, sans-serif;
+}
+[lang=zh-CN] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Simplified Chinese", "Noto Sans SC", Arial, Helvetica, sans-serif;
+}
+[lang=zh-TW] .glue-card__description {
+  font-family: "Google Sans Text", "Google Sans Traditional Chinese", "Noto Sans TC", Arial, Helvetica, sans-serif;
+}
+@media (min-width: 1440px) {
+  .glue-card__description {
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0.1px;
+  }
+}
+.glue-card__cta {
+  margin-top: auto;
+  padding: 15px 11px 11px;
+}
+.glue-card__cta .glue-button {
+  border: 0;
+  margin: 0;
+  padding: 13px 13px 13px 13px;
+  pointer-events: none;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-card__cta .glue-button {
+    background: window;
+    color: linkText;
+  }
+}
+.glue-card__cta--arrow {
+  align-self: flex-end;
+}
+.glue-card__cta--arrow .glue-button {
+  border-radius: 100%;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-card__cta--arrow .glue-button {
+    background: window;
+  }
+}
+.glue-card__cta--arrow .glue-button .glue-icon {
+  display: block;
+  height: 24px;
+  width: 24px;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-card__cta--arrow .glue-button .glue-icon {
+    fill: linkText;
+  }
+}
+.glue-card__cta--hover .glue-button {
+  pointer-events: auto;
+}
+.glue-card--border .glue-card__asset,
+.glue-card--border .glue-video__preview-container {
+  z-index: -1;
+}
+.glue-card--list .glue-card__inner {
+  align-items: center;
+  flex-flow: row wrap;
+}
+.glue-card--list .glue-card__asset {
+  align-self: stretch;
+  width: 108px;
+}
+.glue-card--list .glue-card__asset img {
+  height: 100%;
+  object-fit: cover;
+}
+.glue-card--list .glue-card__asset--logo {
+  align-self: center;
+  padding-block: 0;
+  padding-inline: 0 24px;
+  width: 88px;
+}
+.glue-card--list .glue-card__asset--logo img {
+  height: auto;
+  margin: auto;
+  width: 100%;
+}
+.glue-card--list .glue-card__content {
+  order: -1;
+  padding: 16px 16px 0;
+  width: calc(100% - 108px);
+}
+.glue-card--list .glue-card__content:last-child {
+  padding-bottom: 16px;
+}
+.glue-card--list .glue-card__content .glue-label,
+.glue-card--list .glue-card__content .glue-headline,
+.glue-card--list .glue-card__content .glue-card__description,
+.glue-card--list .glue-card__content .glue-caption {
+  margin-top: 4px;
+}
+.glue-card--list .glue-card__content .glue-label:first-child,
+.glue-card--list .glue-card__content .glue-headline:first-child,
+.glue-card--list .glue-card__content .glue-card__description:first-child,
+.glue-card--list .glue-card__content .glue-caption:first-child {
+  margin-top: 0;
+}
+.glue-card--list .glue-card__cta {
+  padding: 3px 3px 3px;
+  width: 100%;
+}
+
 .glue-visually-hidden {
   clip: rect(1px, 1px, 1px, 1px);
   height: 1px;
@@ -6893,6 +7244,10 @@ body::after {
   }
 }
 
+.g-font-bold {
+  font-weight: bold !important;
+}
+
 .g-section-1 {
   display: flex;
   flex-direction: column;
@@ -6989,6 +7344,16 @@ body::after {
   border: none;
   padding-bottom: 0px;
   margin-bottom: 0px;
+}
+
+.g-section-4 {
+  padding: 84px 24px;
+}
+.g-section-4 .__container {
+  margin-top: 24px;
+}
+.g-section-4 .__container .glue-cards {
+  grid-gap: 12px 12px !important;
 }
 
 /*# sourceMappingURL=theme.css.map*/

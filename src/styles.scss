@@ -11,6 +11,8 @@
 @use "@google/glue/lib/header";
 @use "@google/glue/lib/footer";
 @use "@google/glue/lib/grids";
+@use '@google/glue/lib/cards';
+
 
 // Import Glue layout overrides
 @use "@google/glue/lib/accessibility";
@@ -18,6 +20,12 @@
 
 // Variables
 $color_primary: #1d2559;
+
+// Helpers
+
+.g-font-bold {
+  font-weight: bold !important;
+}
 
 .g-section-1 {
   display: flex;
@@ -120,6 +128,17 @@ $color_primary: #1d2559;
           }
         }
       }
+    }
+  }
+}
+
+.g-section-4 {
+  padding: 84px 24px;
+
+  .__container {
+    margin-top: 24px;
+    .glue-cards {
+      grid-gap: 12px 12px !important;
     }
   }
 }
