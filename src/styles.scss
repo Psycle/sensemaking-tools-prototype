@@ -21,6 +21,7 @@
 // Variables
 $color_primary: #1d2559;
 $bg_color_secondary: #e9eaf3;
+$bg_color_third: #fafbfc; // third color variant for bg
 // Helpers
 
 .g-font-bold {
@@ -132,6 +133,7 @@ $bg_color_secondary: #e9eaf3;
 }
 
 .g-section-4 {
+  background-color: $bg_color_third;
   .__container {
     margin-top: 24px;
     .glue-cards {
@@ -202,12 +204,6 @@ $bg_color_secondary: #e9eaf3;
     }
 
   }
-
-  
- 
-  
-
-  
 }
 
 .g-section-6 {
@@ -222,4 +218,12 @@ $bg_color_secondary: #e9eaf3;
   .glue-button {
     margin-top: 24px;
   }
+}
+
+
+.g-section-separator {
+  border-bottom: solid 1px rgb($color_primary, 0.2);
+  padding-bottom: 36px;
+  margin-bottom: 36px;
+  content: " ";
 }
