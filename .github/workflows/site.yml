@@ -35,8 +35,8 @@ jobs:
         git fetch
 
         # get the site and the docs
-        git checkout site-sm -- site
-        git checkout main -- docs
+        git checkout origin/site-sm -- site
+        git checkout origin/main -- docs
 
         # move site to the root and remove the folder
         mv site/* .
