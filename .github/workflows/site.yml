@@ -5,9 +5,9 @@ name: Site + Docs
 
 on:
   push:
-    branches: [ "main", "site-sm" ]
+    branches: [ "site-sm-pages" ]
   pull_request:
-    branches: [ "main", "site-sm" ]
+    branches: [ "site-sm-pages" ]
 
 jobs:
   build:
