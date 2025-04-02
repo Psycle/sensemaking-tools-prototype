@@ -17,8 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [22.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -41,37 +40,21 @@ jobs:
         git fetch
 
         # get the site and the docs
-        git checkout origin/site-sm -- site
+        git checkout origin/site -- site
         git checkout origin/main -- docs
-
-        ls
-        echo "-----"
 
         # rename the main.docs as it conflicts on namespace
         mv docs documentation
-
-        ls
-        echo "-----"
 
         # move site to the root and remove the folder
         mv site/* public
         rm -r site
 
-
-        ls
-        echo "-----"
-
         # move documentation into public/documentation
         mv documentation public
 
-        ls
-        echo "-----"
-
         # finally public back to docs
         mv public docs
-
-        ls
-        echo "-----"
 
         # Commit changes only taking docs so any remnant isnt saved
         git add docs
