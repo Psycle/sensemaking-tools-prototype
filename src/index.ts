@@ -1,3 +1,9 @@
+// UI Components
+import { Header } from "@google/glue";
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Add your code here...
+    // @Initializers..
+    const headerEl = document.querySelector<HTMLElement>(".glue-header");
+    if (headerEl) new Header(headerEl);
 });
+ 

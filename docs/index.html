@@ -35,24 +35,42 @@
         <div class="glue-header__tier">
           <!-- Mobile Lockup -->
           <div class="glue-header__container">
-            <!-- Logo -->
-            <div class="glue-header__logo">
-              <a class="glue-header__logo-link" href="#" title="Google">
-                <div class="glue-header__logo-container">
+            <div class="glue-header__lock-up">
+              <!-- Hamburger -->
+              <div class="glue-header__hamburger">
+                <button
+                  class="glue-header__drawer-toggle-btn"
+                  aria-label="Open the navigation drawer"
+                >
                   <svg
-                    class="glue-header__logo-svg"
+                    class="glue-icon glue-icon--24px"
                     role="presentation"
                     aria-hidden="true"
                   >
-                    <use
-                      href="./assets/img/glue-icons.svg#google-color-logo"
-                    ></use>
+                    <use href="./assets/img/glue-icons.svg#menu"></use>
                   </svg>
-                </div>
-                <span class="glue-header__logo--product">Sensemaker</span>
-              </a>
+                </button>
+              </div>
+              <!-- Hamburger (END) -->
+              <!-- Logo -->
+              <div class="glue-header__logo">
+                <a class="glue-header__logo-link" href="#" title="Google">
+                  <div class="glue-header__logo-container">
+                    <svg
+                      class="glue-header__logo-svg"
+                      role="presentation"
+                      aria-hidden="true"
+                    >
+                      <use
+                        href="./assets/img/glue-icons.svg#google-color-logo"
+                      ></use>
+                    </svg>
+                  </div>
+                  <span class="glue-header__logo--product">Sensemaker</span>
+                </a>
+              </div>
+              <!-- Logo (END) -->
             </div>
-            <!-- Logo (END) -->
           </div>
           <!-- Mobile Lockup (END) -->
         </div>
@@ -85,13 +103,36 @@
             <!-- Logo (END) -->
           </div>
           <!-- Desktop Lockup (END) -->
+          <!-- Desktop Linkbar -->
+          <div class="glue-header__container glue-header__container--linkbar">
+            <nav class="glue-header__link-bar">
+              <ul class="glue-header__list">
+                <li class="glue-header__item">
+                  <a
+                    class="glue-header__link"
+                    href="/documentation"
+                    aria-current="page"
+                  >
+                    Documentation
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+          <!-- Desktop Linkbar (END) -->
         </div>
       </div>
       <!-- Glue Header: Desktop (END) -->
+      <!-- Glue Header: Drawer Btn -->
+      <div
+        class="glue-header__drawer-backdrop"
+        role="button"
+        aria-label="Close menu"
+      ></div>
     </header>
     <!-- Component: Header (END) -->
     <!-- Component: Page Container -->
-    <section class="glue-page">content</section>
+    <main class="glue-page">Main page goes here.</main>
     <!-- Component: Page Container (END) -->
     <!-- Component: Footer -->
     <footer class="glue-footer glue-spacer-3-top">
@@ -119,12 +160,19 @@
           </li>
 
           <li class="glue-footer__global-links-list-item">
-            <a class="glue-footer__link" href="https://medium.com/jigsaw/toxicity/home">
+            <a
+              class="glue-footer__link"
+              href="https://medium.com/jigsaw/toxicity/home"
+            >
               Medium
             </a>
           </li>
           <li class="glue-footer__global-links-list-item">
-            <a class="glue-footer__link" href="https://developers.perspectiveapi.com/s/contact-us?language=en_US">Contact Us</a>
+            <a
+              class="glue-footer__link"
+              href="https://developers.perspectiveapi.com/s/contact-us?language=en_US"
+              >Contact Us</a
+            >
           </li>
         </ul>
         <!-- Site Links -->
