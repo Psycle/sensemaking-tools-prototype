@@ -50,7 +50,7 @@ jobs:
         rm -r site
 
         # move documention into public/documention
-        mv documention public/documention
+        mv documention public
 
         # finally public back to docs
         mv public docs
