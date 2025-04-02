@@ -1,0 +1,79 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Site + Docs Copy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "site-sm-pages" ]
+  pull_request:
+    branches: [ "site-sm-pages" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Amalgamate site and docs
+      run: |
+        # reset
+        rm -rf docs
+        rm -rf public
+        mkdir public
+
+        # creds
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git fetch
+
+        # get the site and the docs
+        git checkout origin/site-sm -- site
+        git checkout origin/main -- docs
+
+        ls
+        echo "-----"
+
+        # rename the main.docs as it conflicts on namespace
+        mv docs documentation
+
+        ls
+        echo "-----"
+
+        # move site to the root and remove the folder
+        mv site/* public
+        rm -r site
+
+
+        ls
+        echo "-----"
+
+        # move documentation into public/documentation
+        mv documentation public
+
+        ls
+        echo "-----"
+
+        # finally public back to docs
+        mv public docs
+
+        ls
+        echo "-----"
+
+        # Commit changes only taking docs so any remnant isnt saved
+        git add docs
+        git diff-index --quiet HEAD ||  git commit -am "Build latest docs sites"
+        git push -f
