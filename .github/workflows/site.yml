@@ -29,18 +29,22 @@ jobs:
 
     - name: Amalgamate site and docs
       run: |
+        # reset
+        rm -rf docs
+        rm -rf public
+        mkdir public
+
         # creds
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git fetch
 
-        rm -rf docs
-        rm -rf public
-        mkdir public
-
         # get the site and the docs
         git checkout origin/site-sm -- site
         git checkout origin/main -- docs
+
+        ls
+        echo "-----"
 
         # rename the main.docs as it conflicts on namespace
         mv docs documentation
