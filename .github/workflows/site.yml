@@ -32,6 +32,7 @@ jobs:
         # creds
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
+        git fetch
 
         # get the site and the docs
         git checkout site-sm -- site
