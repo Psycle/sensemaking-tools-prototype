@@ -11,8 +11,7 @@
 @use "@google/glue/lib/header";
 @use "@google/glue/lib/footer";
 @use "@google/glue/lib/grids";
-@use '@google/glue/lib/cards';
-
+@use "@google/glue/lib/cards";
 
 // Import Glue layout overrides
 @use "@google/glue/lib/accessibility";
@@ -20,7 +19,7 @@
 
 // Variables
 $color_primary: #1d2559;
-
+$bg_color_secondary: #e9eaf3;
 // Helpers
 
 .g-font-bold {
@@ -61,12 +60,13 @@ $color_primary: #1d2559;
     padding: 24px;
     color: white;
 
-    .glue-headline { color: white;}
+    .glue-headline {
+      color: white;
+    }
   }
 }
 
 .g-section-3 {
-  padding: 84px 24px;
   .__container {
     display: flex;
     flex-wrap: wrap;
@@ -77,9 +77,9 @@ $color_primary: #1d2559;
 
     .__col-1 {
       width: 100%;
-      
-      @media #{bv.$media-query-lg} { 
-        width: 30%; 
+
+      @media #{bv.$media-query-lg} {
+        width: 30%;
       }
 
       h5 {
@@ -94,7 +94,7 @@ $color_primary: #1d2559;
     .__col-2 {
       margin-top: 24px;
 
-      @media #{bv.$media-query-lg} { 
+      @media #{bv.$media-query-lg} {
         margin-top: 0px;
         display: flex;
         justify-content: flex-end;
@@ -102,7 +102,6 @@ $color_primary: #1d2559;
         flex: 1;
       }
 
-     
       .entries {
         display: block;
         width: auto;
@@ -120,7 +119,6 @@ $color_primary: #1d2559;
             font-weight: bold;
           }
 
-          
           &:last-of-type {
             border: none;
             padding-bottom: 0px;
@@ -133,12 +131,94 @@ $color_primary: #1d2559;
 }
 
 .g-section-4 {
-  padding: 84px 24px;
-
   .__container {
     margin-top: 24px;
     .glue-cards {
       grid-gap: 12px 12px !important;
     }
+  }
+}
+
+.g-section-5 {
+  background-color: $bg_color_secondary;
+}
+
+.g-section-padding {
+  padding: 84px 24px;
+}
+
+.g-section-type-hero {
+  .__container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 36px;
+
+    .__content {
+      width: 100%;
+      order: 1;
+
+      @media #{bv.$media-query-lg} {
+        flex: 1;
+        order: 0;
+        width: auto;
+      }
+
+      .__wrapper {
+        @media #{bv.$media-query-lg} {
+          max-width: 400px;
+        }
+
+        .glue-headline {
+          margin-bottom: 16px;
+        }
+
+        .glue-button {
+          margin-top: 24px;
+        }
+      }
+    }
+
+    .__media {
+      flex: 1;
+      content: "";
+
+      .__image   {
+        background-color: grey;
+        border-radius: 16px;
+        height: 500px;
+        width: 100%;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+      }
+      .__quote {
+        text-align: center;
+        margin-top: 20px;
+        font-style: italic;
+      }
+    }
+
+  }
+
+  
+ 
+  
+
+  
+}
+
+.g-section-6 {
+  .glue-label {
+    margin-bottom: 24px;
+  }
+
+  h3.glue-headline {
+    margin-bottom: 16px;
+  }
+
+  .glue-button {
+    margin-top: 24px;
   }
 }
