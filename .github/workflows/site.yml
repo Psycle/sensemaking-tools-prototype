@@ -34,26 +34,28 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git fetch
 
-        # do this in docs
+        rm -rf docs
         rm -rf public
         mkdir public
-        cd public
 
         # get the site and the docs
         git checkout origin/site-sm -- site
         git checkout origin/main -- docs
 
-        # move site to the root and remove the folder
-        mv site/* .
-        rm -r site
-
-        # rename docs
+        # rename the main.docs as it conflicts on namespace
         mv docs documentation
 
-        cd ..
+        # move site to the root and remove the folder
+        mv site/* public
+        rm -r site
+
+        # move documention into public/documention
+        mv documention public/documention
+
+        # finally public back to docs
         mv public docs
 
-        # Commit changes
-        git add .
+        # Commit changes only taking docs so any remnant isnt saved
+        git add docs
         git diff-index --quiet HEAD ||  git commit -am "Build latest docs sites"
         git push -f
