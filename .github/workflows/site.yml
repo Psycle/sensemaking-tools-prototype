@@ -4,6 +4,9 @@
 name: Site + Docs
 
 on:
+  repository_dispatch:
+    types: [site_update, docs_update]
+    branches: [ "site-sm-pages" ]
   push:
     branches: [ "site-sm-pages" ]
   pull_request:
