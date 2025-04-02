@@ -60,8 +60,8 @@ jobs:
         ls
         echo "-----"
 
-        # move documention into public/documention
-        mv documention public
+        # move documentation into public/documentation
+        mv documentation public
 
         ls
         echo "-----"
