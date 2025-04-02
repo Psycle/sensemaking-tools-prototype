@@ -7124,6 +7124,218 @@ body::after {
   width: 100%;
 }
 
+.glue-video {
+  font-size: 19px;
+  position: relative;
+}
+.glue-video:focus {
+  outline: 2px solid transparent;
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #185abc;
+  border-radius: 4px;
+}
+.glue-video.glue-video--marquee {
+  cursor: pointer;
+  display: block;
+}
+.glue-video.glue-video--inline {
+  cursor: pointer;
+  display: inline-block;
+  max-width: 100%;
+}
+.glue-video__play {
+  height: 60px;
+  left: 50%;
+  margin: -30px -42px 0;
+  position: absolute;
+  top: 50%;
+  width: 84px;
+  z-index: 15;
+}
+.glue-video__play.glue-video__play--inline {
+  height: 48px;
+  margin: -24px -34px 0;
+  width: 68px;
+}
+.glue-video__image {
+  height: 20px;
+  margin-right: 10px;
+  width: 28px;
+}
+.glue-video__nojs {
+  display: none;
+}
+.glue-video img {
+  width: 100%;
+  z-index: 10;
+}
+.glue-video__preview-container {
+  cursor: pointer;
+  opacity: 1;
+  outline: none;
+  overflow: hidden;
+  position: relative;
+}
+a:not(.glue-card) .glue-video__preview-container--modal, .glue-video__preview-container--inline {
+  border: 3px solid transparent;
+  border-radius: 4px;
+}
+a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-image, .glue-video__preview-container--inline .glue-video__preview-image {
+  border-radius: 3px;
+}
+.glue-video .glue-video__info {
+  align-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  height: 100%;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+.glue-video__play-button {
+  height: 48px;
+  margin-block: 6px;
+  width: 48px;
+}
+.glue-video__play-button--white {
+  color: #fff;
+}
+.glue-video__play-button--grey {
+  color: #202124;
+}
+.glue-video__play-button--red {
+  color: #f00;
+}
+.glue-video__label {
+  border-radius: 2px;
+  margin: 0 auto;
+  text-align: center;
+  width: fit-content;
+}
+.glue-video__label-container {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.glue-video__label--large {
+  padding: 4px 10px;
+}
+@media (min-width: 600px) {
+  .glue-video__label--large {
+    padding: 8px 16px;
+  }
+}
+.glue-video__label--small.glue-video__label {
+  font-size: 20px;
+  letter-spacing: initial;
+  line-height: 28px;
+  padding: 4px 10px;
+}
+.glue-video__label--light {
+  color: #fff;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-video__label--light {
+    forced-color-adjust: none;
+    color: #202124;
+  }
+}
+.glue-video__label--light.glue-video__label--highlight {
+  background: #fff;
+  color: #202124;
+}
+.glue-video__label--dark {
+  color: #202124;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-video__label--dark {
+    forced-color-adjust: none;
+    color: #fff;
+  }
+}
+.glue-video__label--dark.glue-video__label--highlight {
+  background: #202124;
+  color: #fff;
+}
+.glue-video__timestamp {
+  align-items: center;
+  border-radius: 100px;
+  display: flex;
+  height: 20px;
+  margin: 0 auto;
+  min-width: 55px;
+  padding: 2px 6px;
+  visibility: hidden;
+  width: fit-content;
+}
+.glue-card .glue-video__timestamp {
+  bottom: 5%;
+  position: absolute;
+  right: 3%;
+}
+.glue-video__timestamp-icon {
+  height: 10px;
+  margin-inline-end: 3px;
+  min-height: 12px;
+  min-width: 12px;
+  width: 14px;
+}
+.glue-video__timestamp-container {
+  width: 100%;
+}
+.glue-video__timestamp-duration {
+  text-align: center;
+  width: 100%;
+}
+.glue-video__timestamp--visible {
+  visibility: visible;
+}
+.glue-video__timestamp--light {
+  background: rgba(255, 255, 255, 0.6);
+  color: #202124;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-video__timestamp--light {
+    forced-color-adjust: none;
+    background: #202124;
+    color: #fff;
+  }
+}
+.glue-video__timestamp--dark {
+  background: rgba(32, 33, 36, 0.6);
+  color: #fff;
+}
+@media (-ms-high-contrast: active), (forced-colors: active) {
+  .glue-video__timestamp--dark {
+    forced-color-adjust: none;
+    background: white;
+    color: #202124;
+  }
+}
+.glue-video__container--inline {
+  height: auto;
+  opacity: 1;
+  padding-bottom: 56.25%;
+  position: relative;
+  transition: opacity 200ms ease-in;
+  width: 100%;
+}
+.glue-video__preview-container:not(.glue-video--hidden) + .glue-video__container--inline {
+  display: none;
+}
+.glue-video__container--inline iframe {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+.glue-video .glue-video--hidden {
+  display: none;
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
 .glue-visually-hidden {
   clip: rect(1px, 1px, 1px, 1px);
   height: 1px;

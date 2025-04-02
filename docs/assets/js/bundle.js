@@ -23822,11 +23822,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _google_glue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @google/glue */ "./_glue/index.js");
 // UI Components
 
+
 document.addEventListener("DOMContentLoaded", () => {
     // @Initializers..
     const headerEl = document.querySelector(".glue-header");
     if (headerEl)
         new _google_glue__WEBPACK_IMPORTED_MODULE_0__.Header(headerEl);
+    const videoElement = document.querySelector(".glue-video");
+    if (videoElement)
+        new _google_glue__WEBPACK_IMPORTED_MODULE_0__.YoutubeVideo(videoElement);
 });
 
 })();
