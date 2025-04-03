@@ -7,7 +7,6 @@
 @use "@google/glue/lib/buttons";
 @use "@google/glue/lib/icons";
 
-
 // Import Glue UI components
 @use "@google/glue/lib/header";
 @use "@google/glue/lib/footer";
@@ -18,13 +17,12 @@
 // Import Glue layout overrides
 @use "@google/glue/lib/accessibility";
 @use "@google/glue/lib/spacers";
-@use '@google/glue/lib/alignment';
-
+@use "@google/glue/lib/alignment";
 
 // Import Glue mixins/variables
-@use '@google/glue/lib/colors/variables' as gc; // For SCSS variables
+@use "@google/glue/lib/colors/variables" as gc; // For SCSS variables
 @use "@google/glue/lib/breakpoints/_variables" as gb;
-@use '@google/glue/lib/spacers/mixins' as mixins;
+@use "@google/glue/lib/spacers/mixins" as mixins;
 
 // Variables
 $color_primary: #1d2559;
@@ -37,7 +35,7 @@ $bg_color_third: #fafbfc; // third color variant for bg
 }
 
 // Custom functions
-// Create spacer-1 through spacer-8 classes
+// @Create spacer-1 through spacer-8 classes
 @for $i from 1 through 8 {
   .glue-spacer-padding-#{$i}-bottom {
     @include mixins.spacer($i, padding, bottom);
@@ -55,7 +53,6 @@ $bg_color_third: #fafbfc; // third color variant for bg
   @media #{gb.$media-query-lg} {
     padding: 84px 24px;
   }
-
 }
 
 // Components
@@ -131,47 +128,18 @@ $bg_color_third: #fafbfc; // third color variant for bg
   }
 }
 
-.g-section-3 {
-  .__container {
+#section-3 {
+  .__entries {
     
-
-    .__col-1 {
-  
-
-      .glue-headline {
-        margin-bottom: 16px;
-      }
-
-      .glue-button {
-        margin-top: 16px;
-      }
+    @media #{gb.$media-query-md} {
+      margin-top: 16px;
     }
 
-    .__col-2 {
+    .__entry {
+      border-bottom: solid 1px rgb($color_primary, 0.2);
 
-      .entries {
-        display: block;
-        width: auto;
-
-        .entry {
-          border-bottom: solid 1px rgb($color_primary, 0.2);
-          // padding-bottom: 36px;
-          // margin-bottom: 36px;
-
-          // @media #{bv.$media-query-lg} {
-          //   max-width: 400px;
-          // }
-
-          h6 {
-            font-weight: bold;
-          }
-
-          &:last-of-type {
-            border: none;
-            padding-bottom: 0px;
-            margin-bottom: 0px;
-          }
-        }
+      &:last-of-type {
+        border: none;
       }
     }
   }
