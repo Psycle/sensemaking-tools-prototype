@@ -29,13 +29,13 @@ jobs:
 
     - name: Build Site
       env:
-        SITE_PATH: 'docs'
+        SITE_PATH: 'site'
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git fetch
 
-        # Build site into 'docs/'
+        # Build site into 'site/'
         rm -rf $SITE_PATH
         mkdir -p $SITE_PATH
         npm install
