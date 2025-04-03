@@ -23823,6 +23823,7 @@ __webpack_require__.r(__webpack_exports__);
 // UI Components
 
 
+
 document.addEventListener("DOMContentLoaded", () => {
     // @Initializers..
     const headerEl = document.querySelector(".glue-header");
@@ -23831,6 +23832,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const videoElement = document.querySelector(".glue-video");
     if (videoElement)
         new _google_glue__WEBPACK_IMPORTED_MODULE_0__.YoutubeVideo(videoElement);
+    const carouselEl = document.querySelector(".glue-carousel");
+    if (carouselEl)
+        new _google_glue__WEBPACK_IMPORTED_MODULE_0__.Carousel(carouselEl, { cardsPerPage: 1, navigation: false });
 });
 
 })();

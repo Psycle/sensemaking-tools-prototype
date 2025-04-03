@@ -13,6 +13,7 @@
 @use "@google/glue/lib/grids";
 @use "@google/glue/lib/cards";
 @use "@google/glue/lib/ytvideo";
+@use '@google/glue/lib/carousel';
 
 // Import Glue layout overrides
 @use "@google/glue/lib/accessibility";
@@ -122,50 +123,10 @@
   background: gc.$blue-100;
 }
 
-
-
-.g-section-6 {
-  .glue-label {
-    margin-bottom: 24px;
-  }
-
-  h2.glue-headline {
-    margin-bottom: 16px;
-  }
-
-  .glue-button {
-    margin-top: 24px;
-  }
-}
-
-.g-section-10 {
-  .__container {
-    @media #{gb.$media-query-lg} {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16rem;
-    }
-
-    .__left {
-      margin-bottom: 16px;
-      text-align: center;
-
-      @media #{gb.$media-query-lg} {
-        max-width: 300px;
-        text-align: left;
-      }
-    }
-
-    .__right {
-      text-align: center;
-
-      @media #{gb.$media-query-lg} {
-        flex: 1;
-        text-align: left;
-      }
-    }
+#section-7 {
+  .__slide {
+    height: 100%;
+    padding: 48px 48px;
+    color: black !important;
   }
 }
