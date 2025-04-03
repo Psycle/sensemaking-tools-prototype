@@ -8882,7 +8882,7 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
 #section-2 {
   background: #1967d2;
 }
-#section-2 .glue-headline {
+#section-2 p {
   color: white;
 }
 
@@ -8899,12 +8899,6 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
 
 #section-5 {
   background: #d2e3fc;
-}
-
-#section-7 .__slide {
-  height: 100%;
-  padding: 16px 24px;
-  color: black !important;
 }
 
 /*# sourceMappingURL=theme.css.map*/

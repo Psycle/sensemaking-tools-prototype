@@ -88,7 +88,7 @@
 #section-2 {
   background: gc.$blue-700;
 
-  .glue-headline {
+  p {
     color: white;
   }
 }
@@ -115,8 +115,5 @@
 
 #section-7 {
   .__slide {
-    height: 100%;
-    padding: 16px 24px;
-    color: black !important;
   }
 }

@@ -369,7 +369,9 @@
   <!-- Section 7 -->
   <section id="section-7" class="g-custom-hero g-spacer-padding-6-top g-spacer-padding-6-bottom">
     <div class="glue-page">
-      <div class="glue-carousel glue-carousel--cards" aria-label="Carousel description">
+      <div class="glue-carousel glue-carousel--cards" aria-label="Carousel description"
+        data-glue-carousel-navigation="true"
+      >
         <!-- Previous -->
         <button class="glue-carousel__button glue-carousel__button--prev" aria-label="Go to the previous slide">
           <svg role="presentation" aria-hidden="true" class="glue-icon glue-icon--32px">
@@ -387,7 +389,7 @@
           <div class="glue-carousel__list">
             <!-- Slide 1 -->
             <div class="glue-carousel__item">
-              <div class="__slide glue-grid g-spacer-padding-7-bottom g-spacer-padding-7-top">
+              <div class="__slide glue-grid">
                 <div
                   class="glue-grid__col glue-grid__col--span-4 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-1 glue-order-2-md glue-order-2-sm">
                   <h2 class="glue-headline glue-headline--headline-3 glue-font-weight-bold glue-spacer-3-bottom">
@@ -418,8 +420,28 @@
                 <div
                   class="glue-grid__col glue-grid__col--span-6 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-3 glue-order-1-md glue-order-1-sm g-spacer-4-bottom-md">
                   <div class="glue-video">
-                    <div class="glue-video__container glue-video__container--inline"
-                      data-glue-yt-video-vid="pXc_w49fsmI"></div>
+                    <div class="glue-video__preview-container glue-video__preview-container--inline">
+                      <picture class="glue-video__preview">
+                        <img class="glue-video__preview-image" alt="Video preview image" src="./assets/img/placeholder.webp">
+                      </picture>
+                      <div class="glue-video__info">
+                        <svg class="glue-icon glue-video__play-button glue-video__play-button--red" role="presentation">
+                          <use href="./assets/img/glue-icons.svg#video-youtube"></use>
+                        </svg>
+                        <div class="glue-video__label-container">
+                          <p class="glue-headline glue-headline--headline-3 glue-video__label glue-video__label--small glue-video__label--dark">Watch the film</p>
+                        </div>
+                        <div class="glue-video__timestamp-container">
+                          <span class="glue-video__timestamp glue-video__timestamp--dark">
+                            <svg class="glue-icon glue-video__timestamp-icon" role="presentation">
+                              <use href="./assets/img/glue-icons.svg#access-time"></use>
+                            </svg>
+                            <span class="glue-label glue-video__timestamp-duration"></span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="glue-video__container glue-video__container--inline" data-glue-yt-video-vid="pXc_w49fsmI"></div>
                   </div>
                   <div class="glue-text-center glue-spacer-2-top">
                     <p class="glue-caption">
@@ -434,7 +456,7 @@
             <!-- Slide 1 (END) -->
             <!-- Slide 2 -->
             <div class="glue-carousel__item">
-              <div class="__slide glue-grid g-spacer-padding-7-bottom g-spacer-padding-7-top">
+              <div class="__slide glue-grid">
                 <div
                   class="glue-grid__col glue-grid__col--span-4 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-1 glue-order-2-md glue-order-2-sm">
                   <h2 class="glue-headline glue-headline--headline-3 glue-font-weight-bold glue-spacer-3-bottom">
@@ -461,16 +483,14 @@
                 <div class="glue-grid__col glue-grid__col--span-2 glue-grid__col--span-0-md glue-order-2"></div>
                 <div
                   class="glue-grid__col glue-grid__col--span-6 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-3 glue-order-1-md glue-order-1-sm g-spacer-4-bottom-md">
-                  <div class="__image" style="
-                          background-image: url('/assets/img/placeholder.webp');
-                        "></div>
+                  <img alt="[placeholder alt]" src="./assets/img/placeholder.webp">
                 </div>
               </div>
             </div>
             <!-- Slide 2 (END) -->
             <!-- Slide 3 -->
             <div class="glue-carousel__item">
-              <div class="__slide glue-grid g-spacer-padding-7-bottom g-spacer-padding-7-top">
+              <div class="__slide glue-grid">
                 <div
                   class="glue-grid__col glue-grid__col--span-4 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-1 glue-order-2-md glue-order-2-sm">
                   <h2 class="glue-headline glue-headline--headline-3 glue-font-weight-bold glue-spacer-3-bottom">
@@ -496,9 +516,7 @@
                 <div class="glue-grid__col glue-grid__col--span-2 glue-grid__col--span-0-md glue-order-2"></div>
                 <div
                   class="glue-grid__col glue-grid__col--span-6 glue-grid__col--span-12-md glue-grid__col--align-middle glue-order-3 glue-order-1-md glue-order-1-sm g-spacer-4-bottom-md">
-                  <div class="__image" style="
-                          background-image: url('/assets/img/placeholder.webp');
-                        "></div>
+                  <img alt="[placeholder alt]" src="./assets/img/placeholder.webp">
                 </div>
               </div>
             </div>
