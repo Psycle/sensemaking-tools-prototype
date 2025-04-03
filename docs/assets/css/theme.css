@@ -8534,6 +8534,13 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
   content: " ";
 }
 
+.g-icon-doc-link {
+  height: 20px;
+  width: 20px;
+  margin-left: 8px;
+  align-self: center;
+}
+
 #section-2 {
   background: #1967d2;
 }
