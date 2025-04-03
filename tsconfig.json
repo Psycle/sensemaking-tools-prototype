@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "./docs/",
+    "outDir": "./site/",
     "noImplicitAny": true,
     "allowJs": true,
     "target": "ESNext",

@@ -5,7 +5,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 // Configuration
-const OUTPUT_FOLDER = "docs";
+const OUTPUT_FOLDER = "site";
 
 module.exports = {
   devtool: "source-map",
