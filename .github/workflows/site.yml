@@ -66,11 +66,6 @@ jobs:
           # finally public back to docs
           mv public docs
 
-          # Commit changes only taking docs so any remnant isnt saved
-          # git add docs
-          # git diff-index --quiet HEAD ||  git commit -am "Build latest docs sites"
-          # git push -f
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
