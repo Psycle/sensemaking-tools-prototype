@@ -6,9 +6,9 @@ name: Site + Docs
 on:
   workflow_dispatch:
   push:
-    branches: [ "site-sm-pages" ]
+    branches: [ "site-deploy" ]
   pull_request:
-    branches: [ "site-sm-pages" ]
+    branches: [ "site-deploy" ]
 
 jobs:
   build:
