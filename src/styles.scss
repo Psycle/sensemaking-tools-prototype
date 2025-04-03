@@ -18,16 +18,12 @@
 @use "@google/glue/lib/accessibility";
 @use "@google/glue/lib/spacers";
 @use "@google/glue/lib/alignment";
+@use "@google/glue/lib/order";
 
 // Import Glue mixins/variables
 @use "@google/glue/lib/colors/variables" as gc; // For SCSS variables
 @use "@google/glue/lib/breakpoints/_variables" as gb;
 @use "@google/glue/lib/spacers/mixins" as mixins;
-
-// Variables
-$color_primary: #1d2559;
-$bg_color_secondary: #e9eaf3;
-$bg_color_third: #fafbfc; // third color variant for bg
 
 // Custom overrides
 .glue-fullbleed {
@@ -44,81 +40,33 @@ $bg_color_third: #fafbfc; // third color variant for bg
   .glue-spacer-padding-#{$i}-top {
     @include mixins.spacer($i, padding, top);
   }
+
+  .glue-spacer-#{$i}-bottom-md {
+    @media #{gb.$media-query-md} {
+      @include mixins.spacer($i, margin, bottom);
+    }
+  }
+
+  .glue-spacer-#{$i}-top-md {
+    @media #{gb.$media-query-md} {
+      @include mixins.spacer($i, margin, top);
+    }
+  }
 }
 
 // Helpers
-.g-section-padding {
-  padding: 48px 8px;
-
-  @media #{gb.$media-query-lg} {
-    padding: 84px 24px;
-  }
+.glue-align-self-center {
+  align-self: center;
 }
 
-// Components
+.section-separator {
+  border-bottom: solid 1px rgba(gc.$blue-700, 0.3);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
 
-.g-section-type-hero {
-  .__container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 36px;
-
-    .__content {
-      width: 100%;
-      order: 1;
-
-      @media #{gb.$media-query-lg} {
-        flex: 1;
-        order: 0;
-        width: auto;
-      }
-
-      .__wrapper {
-        @media #{gb.$media-query-lg} {
-          max-width: 400px;
-        }
-
-        .glue-headline {
-          margin-bottom: 16px;
-        }
-
-        .glue-button {
-          margin-top: 24px;
-        }
-      }
-    }
-
-    .__media {
-      flex: 1;
-      content: "";
-
-      .__image {
-        background-color: grey;
-        border-radius: 16px;
-        height: 500px;
-        width: 100%;
-        background-size: cover;
-        background-position: center center;
-        background-repeat: no-repeat;
-      }
-      .__quote {
-        text-align: center;
-        margin-top: 20px;
-        font-style: italic;
-      }
-    }
-  }
-}
-
-.g-section-separator {
-  border-bottom: solid 1px rgb($color_primary, 0.2);
-  padding-bottom: 36px;
-  margin-bottom: 36px;
   content: " ";
 }
-
+ 
 // Individual sections
 #section-2 {
   background: gc.$blue-700;
@@ -130,12 +78,8 @@ $bg_color_third: #fafbfc; // third color variant for bg
 
 #section-3 {
   .__entries {
-    @media #{gb.$media-query-md} {
-      margin-top: 16px;
-    }
-
     .__entry {
-      border-bottom: solid 1px rgb($color_primary, 0.2);
+      border-bottom: solid 1px rgb(gc.$blue-500, 0.2);
 
       &:last-of-type {
         border: none;
@@ -156,6 +100,23 @@ $bg_color_third: #fafbfc; // third color variant for bg
 
 #section-5 {
   background: gc.$blue-100;
+}
+
+.__glue-custom-hero {
+  .__align-center {
+    align-self: center;
+  }
+
+  .__image {
+    background-color: grey;
+    border-radius: 16px;
+    height: 500px;
+    width: 100%;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    content: " ";
+  }
 }
 
 .g-section-6 {
@@ -186,6 +147,7 @@ $bg_color_third: #fafbfc; // third color variant for bg
     .__left {
       margin-bottom: 16px;
       text-align: center;
+
       @media #{gb.$media-query-lg} {
         max-width: 300px;
         text-align: left;
