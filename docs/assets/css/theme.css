@@ -8854,10 +8854,6 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
   }
 }
 
-.g-align-self-center {
-  align-self: center;
-}
-
 .g-section-separator {
   border-bottom: solid 1px rgba(25, 103, 210, 0.3);
   padding-bottom: 16px;
