@@ -130,7 +130,6 @@ $bg_color_third: #fafbfc; // third color variant for bg
 
 #section-3 {
   .__entries {
-    
     @media #{gb.$media-query-md} {
       margin-top: 16px;
     }
@@ -145,18 +144,18 @@ $bg_color_third: #fafbfc; // third color variant for bg
   }
 }
 
-.g-section-4 {
-  background-color: $bg_color_third;
+#section-4 {
+  background: gc.$grey-100;
+
   .__container {
-    margin-top: 24px;
     .glue-cards {
       grid-gap: 12px 12px !important;
     }
   }
 }
 
-.g-section-5 {
-  background-color: $bg_color_secondary;
+#section-5 {
+  background: gc.$blue-100;
 }
 
 .g-section-6 {

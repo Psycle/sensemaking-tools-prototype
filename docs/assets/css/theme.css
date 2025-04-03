@@ -7803,18 +7803,15 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
   border: none;
 }
 
-.g-section-4 {
-  background-color: #fafbfc;
+#section-4 {
+  background: #f1f3f4;
 }
-.g-section-4 .__container {
-  margin-top: 24px;
-}
-.g-section-4 .__container .glue-cards {
+#section-4 .__container .glue-cards {
   grid-gap: 12px 12px !important;
 }
 
-.g-section-5 {
-  background-color: #e9eaf3;
+#section-5 {
+  background: #d2e3fc;
 }
 
 .g-section-6 .glue-label {
