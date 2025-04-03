@@ -7582,6 +7582,144 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
   }
 }
 
+.glue-text-left,
+.glue-text-start {
+  text-align: start;
+}
+
+.glue-text-right,
+.glue-text-end {
+  text-align: end;
+}
+
+.glue-text-center {
+  text-align: center;
+}
+
+.glue-text-justify {
+  text-align: justify;
+}
+
+.glue-valign-bottom {
+  vertical-align: bottom;
+}
+
+.glue-valign-middle {
+  vertical-align: middle;
+}
+
+.glue-valign-top {
+  vertical-align: top;
+}
+
+.glue-fullbleed {
+  max-width: 3840px !important;
+}
+
+.glue-spacer-padding-1-bottom {
+  padding-bottom: 8px;
+}
+
+.glue-spacer-padding-1-top {
+  padding-top: 8px;
+}
+
+.glue-spacer-padding-2-bottom {
+  padding-bottom: 16px;
+}
+
+.glue-spacer-padding-2-top {
+  padding-top: 16px;
+}
+
+.glue-spacer-padding-3-bottom {
+  padding-bottom: 24px;
+}
+
+.glue-spacer-padding-3-top {
+  padding-top: 24px;
+}
+
+.glue-spacer-padding-4-bottom {
+  padding-bottom: 36px;
+}
+
+.glue-spacer-padding-4-top {
+  padding-top: 36px;
+}
+
+.glue-spacer-padding-5-bottom {
+  padding-bottom: 48px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-5-bottom {
+    padding-bottom: 60px;
+  }
+}
+
+.glue-spacer-padding-5-top {
+  padding-top: 48px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-5-top {
+    padding-top: 60px;
+  }
+}
+
+.glue-spacer-padding-6-bottom {
+  padding-bottom: 60px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-6-bottom {
+    padding-bottom: 80px;
+  }
+}
+
+.glue-spacer-padding-6-top {
+  padding-top: 60px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-6-top {
+    padding-top: 80px;
+  }
+}
+
+.glue-spacer-padding-7-bottom {
+  padding-bottom: 92px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-7-bottom {
+    padding-bottom: 120px;
+  }
+}
+
+.glue-spacer-padding-7-top {
+  padding-top: 92px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-7-top {
+    padding-top: 120px;
+  }
+}
+
+.glue-spacer-padding-8-bottom {
+  padding-bottom: 136px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-8-bottom {
+    padding-bottom: 180px;
+  }
+}
+
+.glue-spacer-padding-8-top {
+  padding-top: 136px;
+}
+@media (min-width: 1024px) {
+  .glue-spacer-padding-8-top {
+    padding-top: 180px;
+  }
+}
+
 .g-section-padding {
   padding: 48px 8px;
 }
@@ -7646,80 +7784,18 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
   content: " ";
 }
 
-.g-section-1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  min-height: 400px;
-  text-align: center;
+#section-2 {
+  background: #1967d2;
 }
-.g-section-1 .__container {
-  max-width: 1023px;
-  margin: 0 auto;
-}
-.g-section-1 .__container .__primary-headline {
-  font-weight: bold;
-  margin-bottom: 16px;
-}
-.g-section-1 .__container .__secondary-headline {
-  max-width: 599px;
-  margin: 0 auto;
-}
-
-.g-section-2 {
-  background-color: #1d2559;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-.g-section-2 .--container {
-  text-align: center;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
-  color: white;
-}
-.g-section-2 .--container .glue-headline {
+#section-2 .glue-headline {
   color: white;
 }
 
-.g-section-3 .__container {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-.g-section-3 .__container .__col-1 {
-  width: 100%;
-}
-@media (min-width: 1024px) {
-  .g-section-3 .__container .__col-1 {
-    width: 40%;
-  }
-}
 .g-section-3 .__container .__col-1 .glue-headline {
   margin-bottom: 16px;
 }
 .g-section-3 .__container .__col-1 .glue-button {
   margin-top: 16px;
-}
-.g-section-3 .__container .__col-2 {
-  margin-top: 24px;
-}
-@media (min-width: 1024px) {
-  .g-section-3 .__container .__col-2 {
-    margin-top: 0px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-start;
-    flex: 1;
-  }
 }
 .g-section-3 .__container .__col-2 .entries {
   display: block;
@@ -7727,13 +7803,6 @@ a:not(.glue-card) .glue-video__preview-container--modal .glue-video__preview-ima
 }
 .g-section-3 .__container .__col-2 .entries .entry {
   border-bottom: solid 1px rgba(29, 37, 89, 0.2);
-  padding-bottom: 36px;
-  margin-bottom: 36px;
-}
-@media (min-width: 1024px) {
-  .g-section-3 .__container .__col-2 .entries .entry {
-    max-width: 400px;
-  }
 }
 .g-section-3 .__container .__col-2 .entries .entry h6 {
   font-weight: bold;

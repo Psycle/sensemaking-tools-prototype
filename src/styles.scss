@@ -4,9 +4,9 @@
 @use "@google/glue/lib/typography";
 @use "@google/glue/lib/page";
 @use "@google/glue/lib/breakpoints";
-@use "@google/glue/lib/breakpoints/_variables" as bv;
 @use "@google/glue/lib/buttons";
 @use "@google/glue/lib/icons";
+
 
 // Import Glue UI components
 @use "@google/glue/lib/header";
@@ -18,17 +18,41 @@
 // Import Glue layout overrides
 @use "@google/glue/lib/accessibility";
 @use "@google/glue/lib/spacers";
+@use '@google/glue/lib/alignment';
+
+
+// Import Glue mixins/variables
+@use '@google/glue/lib/colors/variables' as gc; // For SCSS variables
+@use "@google/glue/lib/breakpoints/_variables" as gb;
+@use '@google/glue/lib/spacers/mixins' as mixins;
 
 // Variables
 $color_primary: #1d2559;
 $bg_color_secondary: #e9eaf3;
 $bg_color_third: #fafbfc; // third color variant for bg
 
+// Custom overrides
+.glue-fullbleed {
+  max-width: 3840px !important; // 4K UHD
+}
+
+// Custom functions
+// Create spacer-1 through spacer-8 classes
+@for $i from 1 through 8 {
+  .glue-spacer-padding-#{$i}-bottom {
+    @include mixins.spacer($i, padding, bottom);
+  }
+
+  .glue-spacer-padding-#{$i}-top {
+    @include mixins.spacer($i, padding, top);
+  }
+}
+
 // Helpers
 .g-section-padding {
   padding: 48px 8px;
 
-  @media #{bv.$media-query-lg} {
+  @media #{gb.$media-query-lg} {
     padding: 84px 24px;
   }
 
@@ -48,14 +72,14 @@ $bg_color_third: #fafbfc; // third color variant for bg
       width: 100%;
       order: 1;
 
-      @media #{bv.$media-query-lg} {
+      @media #{gb.$media-query-lg} {
         flex: 1;
         order: 0;
         width: auto;
       }
 
       .__wrapper {
-        @media #{bv.$media-query-lg} {
+        @media #{gb.$media-query-lg} {
           max-width: 400px;
         }
 
@@ -99,68 +123,20 @@ $bg_color_third: #fafbfc; // third color variant for bg
 }
 
 // Individual sections
+#section-2 {
+  background: gc.$blue-700;
 
-.g-section-1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  min-height: 400px;
-  text-align: center;
-
-  .__container {
-    max-width: bv.$viewport-md-max-width;
-    margin: 0 auto;
- 
-    .__primary-headline {
-      font-weight: bold;
-      margin-bottom: 16px;
-    }
-
-    .__secondary-headline {
-      max-width: bv.$viewport-sm-max-width;
-      margin: 0 auto;
-    }
-  }
-}
-
-.g-section-2 {
-  background-color: $color_primary;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-
-  .--container {
-    text-align: center;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 24px;
+  .glue-headline {
     color: white;
-
-    .glue-headline {
-      color: white;
-    }
   }
 }
 
 .g-section-3 {
   .__container {
-    display: flex;
-    flex-wrap: wrap;
-    width: 100%;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
+    
 
     .__col-1 {
-      width: 100%;
-
-      @media #{bv.$media-query-lg} {
-        width: 40%;
-      }
+  
 
       .glue-headline {
         margin-bottom: 16px;
@@ -172,15 +148,6 @@ $bg_color_third: #fafbfc; // third color variant for bg
     }
 
     .__col-2 {
-      margin-top: 24px;
-
-      @media #{bv.$media-query-lg} {
-        margin-top: 0px;
-        display: flex;
-        justify-content: flex-end;
-        align-items: flex-start;
-        flex: 1;
-      }
 
       .entries {
         display: block;
@@ -188,12 +155,12 @@ $bg_color_third: #fafbfc; // third color variant for bg
 
         .entry {
           border-bottom: solid 1px rgb($color_primary, 0.2);
-          padding-bottom: 36px;
-          margin-bottom: 36px;
+          // padding-bottom: 36px;
+          // margin-bottom: 36px;
 
-          @media #{bv.$media-query-lg} {
-            max-width: 400px;
-          }
+          // @media #{bv.$media-query-lg} {
+          //   max-width: 400px;
+          // }
 
           h6 {
             font-weight: bold;
@@ -240,7 +207,7 @@ $bg_color_third: #fafbfc; // third color variant for bg
 
 .g-section-10 {
   .__container {
-    @media #{bv.$media-query-lg} {
+    @media #{gb.$media-query-lg} {
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -252,7 +219,7 @@ $bg_color_third: #fafbfc; // third color variant for bg
     .__left {
       margin-bottom: 16px;
       text-align: center;
-      @media #{bv.$media-query-lg} {
+      @media #{gb.$media-query-lg} {
         max-width: 300px;
         text-align: left;
       }
@@ -261,7 +228,7 @@ $bg_color_third: #fafbfc; // third color variant for bg
     .__right {
       text-align: center;
 
-      @media #{bv.$media-query-lg} {
+      @media #{gb.$media-query-lg} {
         flex: 1;
         text-align: left;
       }
